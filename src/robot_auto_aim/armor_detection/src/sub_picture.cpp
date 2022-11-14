@@ -1,27 +1,39 @@
-#include "robot_status.h"
+
 
 //opencv
 #include <opencv2/opencv.hpp>
 //ros
 #include <image_transport/image_transport.h>
+// #include <camera_subscriber.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include "std_msgs/String.h"
 
-void doMsg(const std_msgs::String::ConstPtr& msg_p){
-    ROS_INFO("我听见:%s",msg_p->data.c_str());
-    // ROS_INFO("我听见:%s",(*msg_p).data.c_str());
+void callback(const sensor_msgs::ImageConstPtr& msg)
+{
+    try
+  {
+    cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+  }
 }
+
 int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
     //2.初始化 ROS 节点:命名(唯一)
-    ros::init(argc,argv,"listener");
+    ros::init(argc,argv,"picture_listener");
     //3.实例化 ROS 句柄
     ros::NodeHandle nh;
 
     //4.实例化 订阅者 对象
-    ros::Subscriber sub = nh.subscribe<std_msgs::String>("chatter",10,doMsg);
+    image_transport::ImageTransport it(nh);
+
+    image_transport::Subscriber sub_ = it.subscribe("image_raw",5,callback);
+    //ros::Subscriber sub = nh.subscribe<sensor_msgs::>("chatter",10,doMsg);
     //5.处理订阅的消息(回调函数)
 
     //     6.设置循环调用回调函数
