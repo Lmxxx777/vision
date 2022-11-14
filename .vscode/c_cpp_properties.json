@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/home/lmx2/vision_ws/devel/include/**",
+                "/opt/ros/noetic/include/**",
+                "/home/lmx2/vision_ws/src/usb_cam/include/**",
+                "/home/lmx2/vision_ws/src/robot_auto_aim/armor_detection/include/**",
+                "/usr/include/**",
+                "/opt/ros/noetic/include"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++14"
+        }
+    ],
+    "version": 4
+}
