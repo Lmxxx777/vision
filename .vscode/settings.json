@@ -1,9 +1,5 @@
 {
     "python.autoComplete.extraPaths": [
-        "/home/lmx2/vision_ws/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages"
-    ],
-    "files.associations": {
-        "memory": "cpp"
-    }
+    ]
 }

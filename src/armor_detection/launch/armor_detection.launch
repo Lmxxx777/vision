@@ -1,0 +1,7 @@
+<launch>
+  
+  <node name="mv_camera_sub" pkg="armor_detection" type="armor_detection" output="screen">
+  </node>
+  
+  
+</launch>

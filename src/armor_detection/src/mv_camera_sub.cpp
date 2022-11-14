@@ -1,19 +1,20 @@
-
-
+#include <ros/ros.h>
 //opencv
 #include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 //ros
 #include <image_transport/image_transport.h>
 // #include <camera_subscriber.h>
 #include <cv_bridge/cv_bridge.h>
 
-#include "std_msgs/String.h"
 
 void callback(const sensor_msgs::ImageConstPtr& msg)
 {
     try
   {
-    cv::imshow("view", cv_bridge::toCvShare(msg, "bgr8")->image);
+    cv::imshow("view", cv_bridge::toCvCopy(msg, "bgr8")->image);
+    cv::waitKey(5);
   }
   catch (cv_bridge::Exception& e)
   {
@@ -25,7 +26,7 @@ int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
     //2.初始化 ROS 节点:命名(唯一)
-    ros::init(argc,argv,"picture_listener");
+    ros::init(argc,argv,"mv_camera_sub");
     //3.实例化 ROS 句柄
     ros::NodeHandle nh;
 

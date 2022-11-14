@@ -6,7 +6,7 @@
 #include "MVCameraCapture.h"
 
 #include <dynamic_reconfigure/server.h>
-#include <mv_camera_ros/CameraConfig.h>
+#include <mv_camera/CameraConfig.h>
 
 
 namespace cv_camera
