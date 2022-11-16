@@ -57,7 +57,7 @@ struct Armor : public cv::RotatedRect    //装甲板结构体
     double confidence;
     int id;  // 装甲板类别
     int grade;
-    EnermyType type;  // 装甲板类型
+    int type;  // 装甲板类型
     Eigen::Vector3d current_position;  // 当前的真实坐标
 //    int area;  // 装甲板面积
 };
