@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarmor_prediction.a  CMakeFiles/armor_prediction.dir/armor_prediction.cpp.o
+/usr/bin/ranlib libarmor_prediction.a

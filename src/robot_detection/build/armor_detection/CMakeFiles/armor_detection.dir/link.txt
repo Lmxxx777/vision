@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarmor_detection.a  CMakeFiles/armor_detection.dir/armor_detection.cpp.o
+/usr/bin/ranlib libarmor_detection.a

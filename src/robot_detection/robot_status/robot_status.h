@@ -1,8 +1,5 @@
 //opencv
 #include <opencv2/opencv.hpp>
-//ros
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
 
 //basic parameter
 #define GRAVITY 9.78

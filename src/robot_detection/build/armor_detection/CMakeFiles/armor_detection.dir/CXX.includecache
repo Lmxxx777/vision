@@ -1,0 +1,12 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/lmx2/robot_detection/armor_detection/armor_detection.cpp
+armor_detection.h
+/home/lmx2/robot_detection/armor_detection/armor_detection.h
+

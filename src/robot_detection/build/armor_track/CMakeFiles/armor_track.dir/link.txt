@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarmor_track.a  CMakeFiles/armor_track.dir/armor_track.cpp.o
+/usr/bin/ranlib libarmor_track.a

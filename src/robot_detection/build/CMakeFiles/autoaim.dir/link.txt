@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/autoaim.dir/robot_detection_node.cpp.o  -o autoaim  gimbal_control/libgimbal_control.a armor_prediction/libarmor_prediction.a armor_track/libarmor_track.a armor_detection/libarmor_detection.a number_DNN/libnumber_DNN.a robot_status/librobot_status.a 

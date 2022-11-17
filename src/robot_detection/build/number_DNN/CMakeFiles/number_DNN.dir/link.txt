@@ -1,0 +1,2 @@
+/usr/bin/ar qc libnumber_DNN.a  CMakeFiles/number_DNN.dir/number_DNN.cpp.o
+/usr/bin/ranlib libnumber_DNN.a
