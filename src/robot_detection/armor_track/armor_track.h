@@ -4,6 +4,7 @@
 #include "robot_status.h"
 #include "armor_detection.hpp"
 #include "armor_prediction.h"
+#include "gimbal_control.h"
 
 // 目的：通过读取进来的armors，筛选出同ID和上一帧的的装甲板，做跟踪
 
@@ -13,11 +14,7 @@ enum TrackerState {
     TRACKING,    // 处于跟踪状态
 } ;
 
-struct headAngle
-{
-    double yaw;
-    double pitch;
-};
+
 
 class ArmorTracker : public robot_state
 {

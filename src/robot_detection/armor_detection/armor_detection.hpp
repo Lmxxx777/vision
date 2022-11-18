@@ -5,10 +5,11 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include "robot_status.h"
 #include "number_DNN.h"
 #include <iostream>
 
-#include "robot_status.h"
+
 
 using namespace std;
 

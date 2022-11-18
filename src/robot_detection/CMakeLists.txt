@@ -4,18 +4,41 @@ project(robot_detection)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++17 -Os -pthread -g")
+# set(EIGEN_DIR /usr/include/eigen3)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++17 -pthread")
 
-find_package(OpenCV 4 REQUIRED)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
+  std_msgs
+  rosconsole
+  sensor_msgs
+  cv_bridge
+  image_geometry
+  image_proc
+  image_transport
+  message_filters
+  camera_info_manager
+)
 
+find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${EIGEN3_INCLUDE_DIRS})
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/robot_status
+  ${PROJECT_SOURCE_DIR}/number_DNN
+  ${PROJECT_SOURCE_DIR}/armor_detection
+  ${PROJECT_SOURCE_DIR}/armor_track            
+  ${PROJECT_SOURCE_DIR}/armor_prediction
+  ${PROJECT_SOURCE_DIR}/gimbal_control
+)
 
-add_executable(${PROJECT_NAME} main.cpp
-            ${PROJECT_SOURCE_DIR}/robot_status/robot_status.cpp
-            ${PROJECT_SOURCE_DIR}/robot_status/robot_status.h
+
+add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/number_DNN/number_DNN.cpp
             ${PROJECT_SOURCE_DIR}/number_DNN/number_DNN.h 
             ${PROJECT_SOURCE_DIR}/armor_detection/armor_detection.cpp
@@ -26,10 +49,26 @@ add_executable(${PROJECT_NAME} main.cpp
             ${PROJECT_SOURCE_DIR}/armor_prediction/armor_prediction.h
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.cpp
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.h
+            ${PROJECT_SOURCE_DIR}/robot_status/robot_status.cpp
+            ${PROJECT_SOURCE_DIR}/robot_status/robot_status.h
 )
 
-# 包含海康相机动态链接库
-# find_library(MVS_LIB libMvCameraControl.so /opt/MVS/lib/64/)
-# target_link_libraries(Infantry_Vision ${MVS_LIB})
+add_executable(robot_detection_node robot_detection_node.cpp)
+
+target_link_libraries(robot_detection_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${Eigen3_LIBRARIES}
+  robot_detection_lib
+)
+
+
+
+
+
+
+
+
+
 
 

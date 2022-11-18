@@ -1,3 +1,4 @@
+#pragma once
 //opencv
 #include <opencv2/opencv.hpp>
 

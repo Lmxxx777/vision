@@ -1,5 +1,5 @@
-#include "ArmorTracker.h"
-#include "AngleSolve.hpp"
+#include "armor_track.h"
+#include "gimbal_control.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 
@@ -21,15 +21,6 @@ ArmorTracker::ArmorTracker() {
     tracker_state = DETECTING;
 }
 
-void ArmorTracker::setMyAngle(cv::Mat src, float pitch, float yaw, float roll, float SPEED)
-{
-    _src = src.clone();
-    AS.ab_pitch = pitch;
-    AS.ab_yaw = yaw;
-    AS.ab_roll = roll;
-    AS.SPEED = SPEED;
-
-}
 
 // 选择enemy_armors，限制为同ID
 void ArmorTracker::selectEnemy(vector<Armor> find_armors)
