@@ -36,7 +36,6 @@ int main(int argc, char  *argv[])
     image_transport::ImageTransport it(nh);
 
     image_transport::Subscriber sub_ = it.subscribe("image_raw",5,callback);
-    //ros::Subscriber sub = nh.subscribe<sensor_msgs::>("chatter",10,doMsg);
     //5.处理订阅的消息(回调函数)
 
     //6.设置循环调用回调函数
