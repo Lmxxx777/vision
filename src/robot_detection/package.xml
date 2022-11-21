@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>robot_detection_node</name>
+  <name>robot_detection</name>
   <version>0.0.0</version>
-  <description>The robot_detection_node package</description>
+  <description>The robot_detection package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

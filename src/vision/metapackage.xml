@@ -11,7 +11,7 @@
 
   <run_depend>catkin</run_depend> <!-- only for backward compatibility with rosbuild -->
   <run_depend>mv_camera</run_depend>
-  <run_depend>armor_detection</run_depend>
+  <run_depend>robot_detection</run_depend>
   <!-- <run_depend>robot_auto_aim</run_depend>
   <run_depend>roslang</run_depend> -->
 

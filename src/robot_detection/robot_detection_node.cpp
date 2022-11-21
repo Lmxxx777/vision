@@ -13,7 +13,9 @@ void callback(const sensor_msgs::ImageConstPtr& msg)
 {
     try
   {
-    cv::imshow("view", cv_bridge::toCvCopy(msg, "bgr8")->image);
+    cv::Mat src = cv_bridge::toCvCopy(msg, "bgr8")->image.clone();
+    cv::imshow("view", src);
+    ROS_INFO("show miage's width %d \n", src.cols);
     cv::waitKey(5);
   }
   catch (cv_bridge::Exception& e)
@@ -37,7 +39,7 @@ int main(int argc, char  *argv[])
     //ros::Subscriber sub = nh.subscribe<sensor_msgs::>("chatter",10,doMsg);
     //5.处理订阅的消息(回调函数)
 
-    //     6.设置循环调用回调函数
+    //6.设置循环调用回调函数
     ros::spin();//循环读取接收的数据，并调用回调函数处理
 
     return 0;

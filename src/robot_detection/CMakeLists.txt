@@ -24,6 +24,13 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES armor_detection
+ CATKIN_DEPENDS roscpp rospy std_msgs rosconsole sensor_msgs cv_bridge image_geometry image_proc image_transport message_filters camera_info_manager
+#  DEPENDS system_lib
+)
+
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
@@ -53,9 +60,9 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.h
 )
 
-add_executable(robot_detection_node robot_detection_node.cpp)
+add_executable(robot_detection robot_detection_node.cpp)
 
-target_link_libraries(robot_detection_node
+target_link_libraries(robot_detection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${Eigen3_LIBRARIES}
