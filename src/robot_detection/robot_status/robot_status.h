@@ -8,6 +8,8 @@
 #define BIG_AIR_K 0.00556
 #define BIG_LIGHT_AIR_K 0.00530
 
+namespace robot_detection {
+
 //robot basic classes
 enum EnermyColor { RED = 1, BLUE = 2 };
 enum EnermyType  { SMALL = 1, BIG = 2 };
@@ -34,3 +36,5 @@ public:
     void initPose(float p, float y, float r);
     void initSpeed(float speed);
 };
+
+}

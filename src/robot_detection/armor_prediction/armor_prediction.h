@@ -1,5 +1,7 @@
 #include <Eigen/Dense>
 
+namespace robot_detection {
+    
 class KalmanFilter {
 
 public:
@@ -24,3 +26,5 @@ public:
     Eigen::VectorXd update(Eigen::Vector3d z_k);
 
 };
+
+}

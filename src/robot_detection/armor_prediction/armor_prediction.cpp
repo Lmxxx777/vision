@@ -1,5 +1,7 @@
 #include "armor_prediction.h"
 
+namespace robot_detection {
+        
 void KalmanFilter::initial(Eigen::Vector3d position)
 {
     H << 1, 0, 0, 0, 0, 0,
@@ -87,4 +89,6 @@ Eigen::VectorXd KalmanFilter::update(Eigen::Vector3d z_k) {
     P = (Eigen::MatrixXd::Identity(6, 6) - K * H) * P;   //计算后验均方差  P[n|n]=(1-K[n]*H)*P[n|n-1]
 
     return x_k1;
+}
+
 }

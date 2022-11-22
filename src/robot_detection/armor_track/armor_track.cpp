@@ -3,8 +3,9 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 
-
 #define DRAW_CENTER_CIRCLE
+
+namespace robot_detection {
 
 ArmorTracker::ArmorTracker() {
     tracking_id = 0;
@@ -23,7 +24,7 @@ ArmorTracker::ArmorTracker() {
 
 
 // 选择enemy_armors，限制为同ID
-void ArmorTracker::selectEnemy(vector<Armor> find_armors)
+void ArmorTracker::selectEnemy(std::vector<Armor> find_armors)
 {
 
     if(find_armors.empty())
@@ -65,7 +66,7 @@ void ArmorTracker::selectEnemy(vector<Armor> find_armors)
             }
         }
 
-        cout<<"Tracker State in no enemy:   "<< tracker_state<<endl;
+        std::cout<<"Tracker State in no enemy:   "<< tracker_state<<std::endl;
         return ;
     }
 
@@ -122,7 +123,7 @@ void ArmorTracker::selectEnemy(vector<Armor> find_armors)
             }
         }
 
-        cout<<"Tracker State in 1 enemy:   "<< tracker_state<<endl;
+        std::cout<<"Tracker State in 1 enemy:   "<< tracker_state<<std::endl;
         return ;
     }
 
@@ -266,7 +267,7 @@ Eigen::Vector3d ArmorTracker::getRealPosition(Armor armor)
     Eigen::Vector3d pc = Tvec;
     Eigen::Vector3d pu = F * pc / pc(2, 0);
     cv::circle(_src, {int(pu(0, 0)), int(pu(1, 0))}, 5, cv::Scalar(255,255,0), -1);
-    cout<<"center:  ("<<pu(0, 0)<<", "<<pu(1, 0)<<", "<<pu(2,0)<<")"<<endl;
+    std::cout<<"center:  ("<<pu(0, 0)<<", "<<pu(1, 0)<<", "<<pu(2,0)<<")"<<std::endl;
 
     //Pos(1,0) = -1 * Pos(1,0);
 #endif
@@ -276,7 +277,7 @@ Eigen::Vector3d ArmorTracker::getRealPosition(Armor armor)
 }
 
 
-headAngle ArmorTracker::finalResult(cv::Mat src, vector<Armor> find_armors,clock_t start_time)
+headAngle ArmorTracker::finalResult(cv::Mat src, std::vector<Armor> find_armors,clock_t start_time)
 {
     _src = src;
     selectEnemy(find_armors);
@@ -288,3 +289,4 @@ headAngle ArmorTracker::finalResult(cv::Mat src, vector<Armor> find_armors,clock
     return AS.send;
 }
 
+}

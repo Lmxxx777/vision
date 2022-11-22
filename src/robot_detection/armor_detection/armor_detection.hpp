@@ -9,12 +9,9 @@
 #include "number_DNN.h"
 #include <iostream>
 
-
-
-using namespace std;
-
 #define POINT_DIST(p1,p2) std::sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y))
 
+namespace robot_detection {
 //灯条结构体
 struct Light : public cv::RotatedRect     //灯条结构体
 {
@@ -69,7 +66,7 @@ class ArmorDetector:public robot_state
 public:
     ArmorDetector(); //构造函数初始化
 
-    vector<Armor> autoAim(const cv::Mat &src); //将最终目标的坐标转换到摄像头原大小的
+    std::vector<Armor> autoAim(const cv::Mat &src); //将最终目标的坐标转换到摄像头原大小的
 
     double cnt;
 
@@ -115,7 +112,7 @@ private:
 
     std::vector<Light> candidateLights; // 筛选的灯条
     std::vector<Armor> candidateArmors; // 筛选的装甲板
-    vector<Armor> finalArmors;
+    std::vector<Armor> finalArmors;
     Armor finalArmor;  // 最终装甲板
 
     void setImage(const cv::Mat &src); //对图像进行设置
@@ -160,6 +157,6 @@ private:
     }
 };
 
-
+}
 
 #endif //ARMOR_DETECTION_H

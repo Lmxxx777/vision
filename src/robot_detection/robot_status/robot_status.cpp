@@ -1,5 +1,7 @@
 #include "robot_status.h"
 
+namespace robot_detection {
+
 robot_state::robot_state()
 {
     enermy_color = BLUE;
@@ -21,4 +23,6 @@ void robot_state::initPose(float p, float y, float r)
 void robot_state::initSpeed(float speed)
 {
     bullet_speed = speed;
+}
+
 }

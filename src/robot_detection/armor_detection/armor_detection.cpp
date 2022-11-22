@@ -12,6 +12,8 @@
 using namespace cv;
 using namespace std;
 
+namespace robot_detection {
+
 ArmorDetector::ArmorDetector()
 {
     cnt=0;
@@ -503,4 +505,6 @@ int ArmorDetector::armorGrade(const Armor& checkArmor)
     cout<<id_grade<<"   "<<height_grade<<"   "<<near_grade<<"    "<<final_grade<<endl;
 
     return final_grade;
+}
+
 }

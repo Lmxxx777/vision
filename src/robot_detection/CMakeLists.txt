@@ -60,7 +60,7 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.h
 )
 
-add_executable(robot_detection robot_detection_node.cpp)
+add_executable(robot_detection robot_detection.cpp)
 
 target_link_libraries(robot_detection
   ${catkin_LIBRARIES}

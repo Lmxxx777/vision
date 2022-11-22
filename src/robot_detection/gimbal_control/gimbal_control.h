@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 #include "armor_detection.hpp"
 
+namespace robot_detection {
+
 struct headAngle
 {
     double yaw;
@@ -57,4 +59,5 @@ public:
     double getFlyTime();
 };
 
+}
 #endif //SHSIHI_ANGLESOLVE_HPP

@@ -5,6 +5,8 @@
 using namespace cv;
 using namespace Eigen;
 
+namespace robot_detection {
+
 AngleSolve::AngleSolve()
 {
     F_MAT=(Mat_<float>(3, 3) <<   1579.60532, 0.000000000000, 627.56545,
@@ -95,7 +97,7 @@ Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type, int method = SOLVEPNP
     };
 
 
-    vector<cv::Point2f> pu;
+    std::vector<cv::Point2f> pu;
     pu.push_back(p[3]);
     pu.push_back(p[2]);
     pu.push_back(p[1]);
@@ -184,5 +186,7 @@ void AngleSolve::getAngle(Eigen::Vector3d predicted_position)
     std::cout<<predicted_position[1]<<std::endl;
     std::cout<<predicted_position[2]<<std::endl;
     /////////////////////
+
+}
 
 }

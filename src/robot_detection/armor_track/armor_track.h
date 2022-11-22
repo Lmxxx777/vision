@@ -8,6 +8,8 @@
 
 // 目的：通过读取进来的armors，筛选出同ID和上一帧的的装甲板，做跟踪
 
+namespace robot_detection {
+
 enum TrackerState {
     DETECTING,   // 还未开始跟踪，作为跟踪第一帧的切换，初始化好卡尔曼
     LOSING,      // 处于丢失状态
@@ -22,7 +24,7 @@ public:
     ArmorTracker();
 
     // 返回是否找到（初始化卡尔曼）和enemy_armor
-    void selectEnemy(vector<Armor> find_armors);
+    void selectEnemy(std::vector<Armor> find_armors);
 
     // 计算当前的真实坐标
     Eigen::Vector3d getRealPosition(Armor armor);
@@ -31,7 +33,7 @@ public:
     void getPredictedPositionAndSpeed(clock_t start_time);
 
     // 计算抬枪角度
-    headAngle finalResult(cv::Mat src, vector<Armor> find_armors,clock_t start_time);
+    headAngle finalResult(cv::Mat src, std::vector<Armor> find_armors,clock_t start_time);
 
 
 
@@ -68,6 +70,7 @@ private:
 
 };
 
+}
 //        // 本帧的真实坐标和预测的下一帧坐标
 //        double cur_pre_distance = (predicted_position - find_armors[0].current_position).norm();
 //        if(cur_pre_distance > cur_pre_threshold)

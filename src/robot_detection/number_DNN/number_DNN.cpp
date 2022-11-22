@@ -2,6 +2,8 @@
 
 using namespace cv;
 
+namespace robot_detection {
+
 dnn::Net DNN_detect::read_net(const std::string& net_path) {
     return dnn::readNetFromONNX(net_path);
 }
@@ -31,4 +33,6 @@ void DNN_detect::net_forward(const Mat& blob, dnn::Net net, int& id, double& con
     minMaxLoc(softmax_prob, nullptr, &confidence, nullptr, &class_id);
     if(class_id.x)
     id = class_id.x;
+}
+
 }
