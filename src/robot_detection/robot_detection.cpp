@@ -20,13 +20,16 @@ cv::Mat src;
 robot_detection::ArmorDetector autoShoot;
 std::vector<robot_detection::Armor> autoTarget;
 
+clock_t image_timestamp_;
+clock_t image_last_timestamp_;
+
 void ImageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   try
   {
     src = cv_bridge::toCvCopy(msg, "bgr8")->image.clone();
-    ROS_INFO("show miage's width %d \n", src.cols);
-    
+    // ROS_INFO("show miage's width %d \n", src.cols);
+
     cv::imshow("main-result-image", src);
     cv::waitKey(5);
   }
@@ -34,6 +37,11 @@ void ImageCallback(const sensor_msgs::ImageConstPtr& msg)
   {
     ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
   }
+
+  image_timestamp_ = std::clock();
+  double delta_t = (double)(image_timestamp_ - image_last_timestamp_) / CLOCKS_PER_SEC;
+
+  ROS_INFO("FPS %lf \n", 1/delta_t);
 
   autoTarget = autoShoot.autoAim(src);
   if (!autoTarget.empty())
@@ -45,6 +53,8 @@ void ImageCallback(const sensor_msgs::ImageConstPtr& msg)
     std::cout<<"no target!!!"<<std::endl;
   }
   
+
+  image_last_timestamp_ = image_timestamp_;
 }
 
 
@@ -65,13 +75,6 @@ int main(int argc, char  *argv[])
     
 
   
-
-
-
-
-
-
-
 
 
 
