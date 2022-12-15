@@ -3,7 +3,7 @@
 Deta-10-ros-v0.0.1
 ### 依赖：
 ```bash
-sudo apt install ros-melodic-serial
+sudo apt install ros-noetic-serial
 ```
 
 ### 使用：    

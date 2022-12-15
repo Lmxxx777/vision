@@ -61,6 +61,8 @@
   <build_depend>image_transport</build_depend>
   <build_depend>message_filters</build_depend>
   <build_depend>camera_info_manager</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>robot_msgs</build_depend>
 
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
@@ -85,6 +87,8 @@
   <exec_depend>image_transport</exec_depend>
   <exec_depend>message_filters</exec_depend>
   <exec_depend>camera_info_manager</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>robot_msgs</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

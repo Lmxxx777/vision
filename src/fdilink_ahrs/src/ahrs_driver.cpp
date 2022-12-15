@@ -24,7 +24,7 @@ ahrsBringup::ahrsBringup() :frist_sn_(false), serial_timeout_(20)
 
   mag_pose_pub_ = nh_.advertise<geometry_msgs::Pose2D>(mag_pose_2d_topic_.c_str(), 10);
 
-  Euler_angles_pub_ = nh_.advertise<geometry_msgs::Vector3>(Euler_angles_topic_.c_str(), 10);
+  Euler_angles_pub_ = nh_.advertise<robot_msgs::EulerAngles>(Euler_angles_topic_.c_str(), 10);
   Magnetic_pub_ = nh_.advertise<geometry_msgs::Vector3>(Magnetic_topic_.c_str(), 10);
   //setp up serial
   try
@@ -44,6 +44,7 @@ ahrsBringup::ahrsBringup() :frist_sn_(false), serial_timeout_(20)
     ROS_ERROR_STREAM("Unable to open port ");
     exit(0);
   }
+  
   if (serial_.isOpen())
   {
     ROS_INFO_STREAM("Serial Port initialized");
@@ -452,14 +453,23 @@ void ahrsBringup::processLoop()
       mag_pose_pub_.publish(pose_2d);
       //std::cout << "YAW: " << pose_2d.theta << std::endl;
       geometry_msgs::Vector3 Euler_angles_2d,Magnetic;  
-      Euler_angles_2d.x = ahrs_frame_.frame.data.data_pack.Roll;
-      Euler_angles_2d.y = ahrs_frame_.frame.data.data_pack.Pitch;
-      Euler_angles_2d.z = ahrs_frame_.frame.data.data_pack.Heading;
+      // Euler_angles_2d.x = ahrs_frame_.frame.data.data_pack.Roll;
+      // Euler_angles_2d.y = ahrs_frame_.frame.data.data_pack.Pitch;
+      // Euler_angles_2d.z = ahrs_frame_.frame.data.data_pack.Heading;
       Magnetic.x = imu_frame_.frame.data.data_pack.magnetometer_x;
       Magnetic.y = imu_frame_.frame.data.data_pack.magnetometer_y;
       Magnetic.z = imu_frame_.frame.data.data_pack.magnetometer_z;
 
-      Euler_angles_pub_.publish(Euler_angles_2d);
+      robot_msgs::EulerAngles Euler_angles;
+      Euler_angles.header.frame_id = "IMU";
+      Euler_angles.header.seq++;
+      Euler_angles.header.stamp = ros::Time::now();
+      Euler_angles.pitch = ahrs_frame_.frame.data.data_pack.Pitch;
+      Euler_angles.yaw = ahrs_frame_.frame.data.data_pack.Heading;
+      Euler_angles.roll = ahrs_frame_.frame.data.data_pack.Roll;
+      
+
+      Euler_angles_pub_.publish(Euler_angles);
       Magnetic_pub_.publish(Magnetic);
 
     }

@@ -2,6 +2,7 @@
   
   <node name="mv_camera_pub" pkg="mv_camera" type="mv_camera" output="screen">
     <remap from="/mv_camera_pub/image_raw" to="/image_raw" />
+    <!--local serial-->
   </node>
   
   

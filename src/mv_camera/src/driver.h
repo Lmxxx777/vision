@@ -5,9 +5,6 @@
 
 #include "MVCameraCapture.h"
 
-#include <dynamic_reconfigure/server.h>
-#include <mv_camera/CameraConfig.h>
-
 
 namespace cv_camera
 {
@@ -62,7 +59,6 @@ class Driver
    */
   boost::shared_ptr<ros::Rate> rate_;
 
-  dynamic_reconfigure::Server<mv_camera::CameraConfig> server_;
 };
 
 }  // namespace cv_camera

@@ -9,6 +9,7 @@
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/CompressedImage.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <camera_info_manager/camera_info_manager.h>
 
@@ -52,22 +53,7 @@ public:
    *
    */
   void open(int32_t device_id);
-
-  /**
-   * @brief Open capture device with device name.
-   *
-   * @param device_path path of the camera device
-   * @throw cv_camera::DeviceError device open failed
-   */
-  void open(const std::string &device_path);
-
-  /**
-   * @brief Load camera info from file.
-   *
-   * This loads the camera info from the file specified in the camera_info_url parameter.
-   */
-  void loadCameraInfo();
-
+  
   /**
    * @brief Open default camera device.
    *
@@ -76,11 +62,6 @@ public:
    * @throw cv_camera::DeviceError device open failed
    */
   void open();
-
-  /**
-   * @brief open video file instead of capture device.
-   */
-  void openFile(const std::string &file_path);
 
   /**
    * @brief capture an image and store.
@@ -95,18 +76,6 @@ public:
    *
    */
   void publish();
-
-  /**
-   * @brief accessor of CameraInfo.
-   *
-   * you have to call capture() before call this.
-   *
-   * @return CameraInfo
-   */
-  inline const sensor_msgs::CameraInfo &getInfo() const
-  {
-    return info_;
-  }
 
   /**
    * @brief accessor of cv::Mat
@@ -129,49 +98,11 @@ public:
    */
   inline const sensor_msgs::ImagePtr getImageMsgPtr() const
   {
+    // return bridge_.toCompressedImageMsg(cv_bridge::JPG);
     return bridge_.toImageMsg();
   }
 
-  /**
-   * @brief try capture image width
-   * @return true if success
-   */
-  inline bool setWidth(int32_t width)
-  {
-    return cap_.set(cv::CAP_PROP_FRAME_WIDTH, width);
-  }
-
-  /**
-   * @brief try capture image height
-   * @return true if success
-   */
-  inline bool setHeight(int32_t height)
-  {
-    return cap_.set(cv::CAP_PROP_FRAME_HEIGHT, height);
-  }
-
-  /**
-   * @brief set CV_PROP_*
-   * @return true if success
-   */
-  bool setPropertyFromParam(int property_id, const std::string &param_name);
-
-
-  void setExposure(double value);
-  void setGain(double value);
-
-  void setAutoExposureMode(bool value);
-  void setAutoGainMode(bool value);
-
-  void setColorGain(cv::Vec3b colorGain);
-  void triggerWhiteBalance();
-
-
 private:
-  /**
-   * @brief rescale camera calibration to another resolution
-   */
-  void rescaleCameraInfo(int width, int height);
 
   /**
    * @brief node handle for advertise.
@@ -200,39 +131,17 @@ private:
   /**
    * @brief image publisher created by image_transport::ImageTransport.
    */
-  image_transport::CameraPublisher pub_;
-
-  /**
-   * @brief capture device.
-   */
-  cv::VideoCapture cap_;
+  image_transport::Publisher pub_;
 
   /**
    * @brief this stores last captured image.
    */
   cv_bridge::CvImage bridge_;
 
-  /**
-   * @brief this stores last captured image info.
-   *
-   * currently this has image size (width/height) only.
-   */
-  sensor_msgs::CameraInfo info_;
-
-  /**
-   * @brief camera info manager
-   */
-  camera_info_manager::CameraInfoManager info_manager_;
-
-  /**
-   * @brief rescale_camera_info param value
-   */
-  bool rescale_camera_info_;
-
   unsigned char *rgbBuffer_;
 
-  bool autoExposureOn_ = true;
-  bool autoGainOn_ = true;
+  bool autoExposureOn_ = false;
+  bool autoGainOn_ = false;
 
   /**
    * @brief MVCamera Info

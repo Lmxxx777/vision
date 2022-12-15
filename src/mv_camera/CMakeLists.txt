@@ -36,11 +36,6 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
-
-generate_dynamic_reconfigure_options(
-  cfg/camera_controls.cfg
-)
-
 catkin_package(
   CATKIN_DEPENDS
     roscpp

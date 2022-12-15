@@ -19,20 +19,24 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   message_filters
   camera_info_manager
+  
+  robot_msgs
 )
 
 find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(Ceres REQUIRED)
+# find_package(matplotlib_cpp REQUIRED)
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES armor_detection
- CATKIN_DEPENDS roscpp rospy std_msgs rosconsole sensor_msgs cv_bridge image_geometry image_proc image_transport message_filters camera_info_manager
+ CATKIN_DEPENDS roscpp rospy std_msgs rosconsole sensor_msgs cv_bridge image_geometry image_proc image_transport message_filters camera_info_manager robot_msgs
 #  DEPENDS system_lib
 )
 
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
@@ -62,10 +66,13 @@ add_library(robot_detection_lib
 
 add_executable(robot_detection robot_detection.cpp)
 
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(robot_detection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${Eigen3_LIBRARIES}
+  ${Boost_INCLUDE_DIRS}
+  Ceres::ceres
   robot_detection_lib
 )
 

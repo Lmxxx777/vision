@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
   # std_srvs
   nav_msgs
   serial
+
+  robot_msgs
 )
 include_directories(
   include 
@@ -28,10 +30,10 @@ include_directories(
 )
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS message_runtime robot_msgs
 #  INCLUDE_DIRS include
 #  LIBRARIES xf_mic_api
-#  CATKIN_DEPENDS roscpp rospy senor_msgs std_msgs
+  # CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs robot_msgs
 #  DEPENDS system_lib
 )
 
@@ -41,6 +43,8 @@ catkin_package(
 
 ## ahrs_driver
 add_executable(ahrs_driver src/ahrs_driver.cpp)
+
+# add_dependencies(ahrs_driver robot_msgs_generate_messages_cpp)
 target_link_libraries(ahrs_driver crc_table ${catkin_LIBRARIES})# ${SERIAL_LIB}
 
 add_executable(imu_tf src/imu_tf.cpp)

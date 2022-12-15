@@ -16,6 +16,8 @@
 #include <ros/package.h>
 #include <crc_table.h>
 
+#include "robot_msgs/EulerAngles.h"
+
 using namespace std;
 namespace FDILink
 {
