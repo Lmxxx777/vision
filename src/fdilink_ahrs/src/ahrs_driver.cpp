@@ -461,7 +461,7 @@ void ahrsBringup::processLoop()
       Magnetic.z = imu_frame_.frame.data.data_pack.magnetometer_z;
 
       robot_msgs::EulerAngles Euler_angles;
-      Euler_angles.header.frame_id = "IMU";
+      Euler_angles.header.frame_id = "euler";
       Euler_angles.header.seq++;
       Euler_angles.header.stamp = ros::Time::now();
       Euler_angles.pitch = ahrs_frame_.frame.data.data_pack.Pitch;

@@ -72,8 +72,8 @@ void MVCameraCapture::open(int32_t device_id)
     CameraSetAeState(hCamera_, FALSE);
     CameraSetExposureTime(hCamera_, 2 * 1000);
     // 按 RGB 顺序提供颜色增益
-//    CameraSetGain(hCamera, 120, 110, 135);
-    CameraSetAnalogGain(hCamera_, 150);  //该值增大后会提升图像背景噪声
+    // CameraSetGain(hCamera_, 120, 110, 135);
+    // CameraSetAnalogGain(hCamera_, 150);  //该值增大后会提升图像背景噪声
     //    CameraSetContrast(h_camera, 200);
     //    CameraSetSaturation(h_camera, 1200);
     //    CameraSetSharpness(h_camera, 10);
@@ -136,8 +136,8 @@ bool MVCameraCapture::capture()
     
     // std::cout << bridge_.image.rows << std::endl;
     // cv::resize(bridge_.image, bridge_.image, cv::Size(640, 480));
-    cv::imshow("iamge", bridge_.image);
-    cv::waitKey(5);
+    // cv::imshow("iamge", bridge_.image);
+    // cv::waitKey(5);
     
 
     ros::Time now = ros::Time::now();

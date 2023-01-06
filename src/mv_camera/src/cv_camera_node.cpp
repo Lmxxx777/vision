@@ -8,11 +8,24 @@ int main(int argc, char **argv)
   ros::NodeHandle private_node("~");
   cv_camera::Driver driver(private_node, private_node);
 
+
+
+  // Time
+  ros::Time begin;
+  ros::Time end;
+
   try
   {
     driver.setup();
     while (ros::ok())
     {
+      // Time
+      end = ros::Time::now();
+      ros::Duration duration = end - begin;
+      double delta_tt = duration.toSec();
+      ROS_INFO("FPS %lf \n", 1/delta_tt);
+      begin = end;
+
       driver.proceed();
       ros::spinOnce();
     }

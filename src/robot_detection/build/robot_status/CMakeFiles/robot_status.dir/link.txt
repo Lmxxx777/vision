@@ -1,2 +1,0 @@
-/usr/bin/ar qc librobot_status.a  CMakeFiles/robot_status.dir/robot_status.cpp.o
-/usr/bin/ranlib librobot_status.a

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libgimbal_control.a  CMakeFiles/gimbal_control.dir/gimbal_control.cpp.o
-/usr/bin/ranlib libgimbal_control.a

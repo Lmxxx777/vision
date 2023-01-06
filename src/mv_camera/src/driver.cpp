@@ -7,7 +7,7 @@
 
 namespace
 {
-const double DEFAULT_RATE = 180.0; // 30
+const double DEFAULT_RATE = 80.0; // 30
 const int32_t PUBLISHER_BUFFER_SIZE = 1;
 }
 
@@ -58,7 +58,7 @@ void Driver::proceed()
   {
     camera_->publish();
   }
-  rate_->sleep();
+  // rate_->sleep();
 }
 
 Driver::~Driver()

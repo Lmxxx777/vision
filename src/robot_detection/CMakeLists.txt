@@ -58,6 +58,8 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/armor_track/armor_track.h            
             ${PROJECT_SOURCE_DIR}/armor_prediction/armor_prediction.cpp
             ${PROJECT_SOURCE_DIR}/armor_prediction/armor_prediction.h
+            ${PROJECT_SOURCE_DIR}/armor_prediction/singer_prediction.cpp
+            ${PROJECT_SOURCE_DIR}/armor_prediction/singer_prediction.hpp
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.cpp
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.h
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.cpp
