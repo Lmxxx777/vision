@@ -1,22 +1,37 @@
 #include "robot_status.h"
 
 namespace robot_detection {
-    
-    void robot_state::updateData(float data[4],int color)
+        
+    void robot_state::updateData(float data[4], float quat[4])
     {
-        ab_roll = data[2];
+        ab_roll  = data[2];
         ab_pitch = data[0];
-        ab_yaw = data[1];
+        ab_yaw   = data[1];
         bullet_speed = data[3];
-        enemy_color = color;
+        quaternion[0] = quat[0];
+	    quaternion[1] = quat[1];
+	    quaternion[2] = quat[2];
+	    quaternion[3] = quat[3];
+        // printf("//////status//////\n");
+        // printf("pitch :%f\n",ab_pitch);
+        // printf("yaw   :%f\n",ab_yaw);
+        // printf("roll  :%f\n",ab_roll);
+        // printf("speed :%f\n",bullet_speed);
+        // printf("////////////////\n");
+
     }
 
-    void robot_state::updateData(float data[4])
+    void robot_state::updateDataColor(float data[4], float quat[4],int color)
     {
-        ab_roll = data[2];
-        ab_pitch = data[0];
-        ab_yaw = data[1];
-        bullet_speed = data[3];
+        updateData(data,quat);
+        enemy_color = color;
+        // printf("//////status//////\n");
+        // printf("pitch :%f\n",ab_pitch);
+        // printf("yaw   :%f\n",ab_yaw);
+        // printf("roll  :%f\n",ab_roll);
+        // printf("speed :%f\n",bullet_speed);
+        // printf("color :%d\n",enemy_color);
+        // printf("////////////////\n");
     }
 
     void robot_state::clone(robot_state &robot)

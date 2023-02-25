@@ -13,6 +13,10 @@ add_message_files(
   DIRECTORY msg/mv_cam_imu
   FILES
   EulerAngles.msg
+  vision.msg
+  control.msg
+  sc_rc_msg.msg
+  robot_ctrl.msg
 )
 
 generate_messages(

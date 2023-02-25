@@ -10,6 +10,7 @@
 #include <iostream>
 
 #define POINT_DIST(p1,p2) std::sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y))
+#define COLOR(str) std::strcmp(str.c_str(),"RED") == 0? RED : BLUE
 
 namespace robot_detection {
 //灯条结构体
@@ -58,7 +59,7 @@ namespace robot_detection {
         int id;  // 装甲板类别
         int grade;
         int type;  // 装甲板类型
-        Eigen::Vector3d imu_position;  // 当前的真实坐标
+        Eigen::Vector3d world_position;  // 当前的真实坐标
         Eigen::Vector3d camera_position;  // 当前的真实坐标
 //    int area;  // 装甲板面积
     };
@@ -71,10 +72,11 @@ namespace robot_detection {
 
         std::vector<Armor> autoAim(const cv::Mat &src, int color); //将最终目标的坐标转换到摄像头原大小的
 
-        double cnt;
+        int cnt;
 
     private:
         int binThresh;
+        int enemy_color = 0;
 
         //light_judge_condition
         double light_max_angle;
@@ -106,8 +108,10 @@ namespace robot_detection {
         double height_grade_ratio;
         double near_grade_ratio;
 
+        double thresh_confidence;
+
         cv::Mat _src;  // 裁剪src后的ROI
-        cv::Mat originSrc;
+        cv::Mat showSrc;//for show
         cv::Mat _binary;
         std::vector<cv::Mat> temps;
 
@@ -117,6 +121,8 @@ namespace robot_detection {
         std::vector<Armor> candidateArmors; // 筛选的装甲板
         std::vector<Armor> finalArmors;
         Armor finalArmor;  // 最终装甲板
+
+        DNN_detect dnnDetect;
 
         void setImage(const cv::Mat &src); //对图像进行设置
 
@@ -134,10 +140,7 @@ namespace robot_detection {
 
         void detectNum(Armor& armor);
 
-        static inline void dnn_detect(cv::Mat frame, Armor& armor)// 调用该函数即可返回数字ID
-        {
-            return DNN_detect::net_forward(DNN_detect::img_processing(std::move(frame), TO_GRAY), DNN_detect::read_net(NET_PATH), armor.id, armor.confidence);
-        }
+        void dnn_detect(cv::Mat frame, Armor& armor);// 调用该函数即可返回数字ID
 
         static inline bool makeRectSafe(cv::Rect & rect, cv::Size size){
             if (rect.x < 0)
@@ -152,11 +155,6 @@ namespace robot_detection {
                 // 如果发现矩形是空的，则返回false
                 return false;
             return true;
-        }
-
-        static inline bool height_sort(Armor &candidate1,Armor &candidate2)
-        {
-            return candidate1.size.height > candidate2.size.height;
         }
     };
 

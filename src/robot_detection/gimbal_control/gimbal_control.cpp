@@ -1,83 +1,110 @@
 #include "gimbal_control.h"
 #include <opencv2/core/eigen.hpp>
 
+// #define SHOW_MEASURE_RRECT
 
 using namespace cv;
 using namespace Eigen;
 
 namespace robot_detection{
 
-AngleSolve::AngleSolve()
+    AngleSolve::AngleSolve()
     {
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
+    cv::FileStorage fs("../other/control_data.yaml", cv::FileStorage::READ);
 
-        fs["big_w"] >> big_w;
-        fs["big_h"] >> big_h;
-        fs["small_w"] >> small_w;
-        fs["small_h"] >> small_h;
-        fs["buff_w"] >> buff_w;
-        fs["buff_h"] >> buff_h;
+    fs["big_w"] >> big_w;
+    fs["big_h"] >> big_h;
+    fs["small_w"] >> small_w;
+    fs["small_h"] >> small_h;
+    fs["self_type"] >> self_type;
 
 
-        fs["F_MAT"] >> F_MAT;
-        fs["C_MAT"] >> C_MAT;
-        cv::cv2eigen(F_MAT,F_EGN);
-        cv::cv2eigen(C_MAT,C_EGN);
+    fs[self_type]["F_MAT"] >> F_MAT;
+    fs[self_type]["C_MAT"] >> C_MAT;
+    cv::cv2eigen(F_MAT,F_EGN);
+    cv::cv2eigen(C_MAT,C_EGN);
 
-        cv::Mat temp;
-        fs["RotationMatrix_cam2imu"] >> temp;
-        cv::cv2eigen(temp,RotationMatrix_cam2imu);
+    cv::Mat temp;
+    fs[self_type]["RotationMatrix_cam2imu"] >> temp;
+    cv::cv2eigen(temp,RotationMatrix_cam2imu);
+    
+	fs[self_type]["center_offset_position"] >> temp;
+	cv::cv2eigen(temp,CenterOffset_cam2imu);
 
-        fs.release();
+    fs.release();
+        fly_time = 0;
     }
 
-// zyx
-Eigen::Matrix3d eulerAnglesToRotationMatrix(Eigen::Vector3d &theta)
-{
-    Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
-    R_x <<
-        1,              0,               0,
-            0,  cos(theta[0]),  -sin(theta[0]),
-            0,  sin(theta[0]),   cos(theta[0]);
+    // zyx
+    Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix(Eigen::Vector3d &theta)
+    {
+        Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
+        R_x <<
+            1,              0,               0,
+                0,  cos(theta[0]),  -sin(theta[0]),
+                0,  sin(theta[0]),   cos(theta[0]);
 
-    Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
-    R_y <<
-        cos(theta[1]),   0, sin(theta[1]),
-            0,   1,             0,
-            -sin(theta[1]),  0, cos(theta[1]);
+        Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
+        R_y <<
+            cos(theta[1]),   0, sin(theta[1]),
+                0,   1,             0,
+                -sin(theta[1]),  0, cos(theta[1]);
 
-    Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
-    R_z <<
-        cos(theta[2]), -sin(theta[2]), 0,
-            sin(theta[2]),  cos(theta[2]), 0,
-            0,              0,             1;
-    Eigen::Matrix3d R = R_z * R_y * R_x;
-    return R;
-}
+        Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
+        R_z <<
+            cos(theta[2]), -sin(theta[2]), 0,
+                sin(theta[2]),  cos(theta[2]), 0,
+                0,              0,             1;
+        Eigen::Matrix3d R = R_z * R_y * R_x;
+        return R;
+    }
 
-// xyz,固定相机和IMU两个坐标系的转换
-Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
-{
-    Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
-    R_x <<
-        1,              0,               0,
-            0,  cos(theta[0]),  -sin(theta[0]),
-            0,  sin(theta[0]),   cos(theta[0]);
+    // xyz,固定相机和IMU两个坐标系的转换
+    Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
+    {
+        Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
+        R_x <<
+            1,              0,               0,
+                0,  cos(theta[0]),  -sin(theta[0]),
+                0,  sin(theta[0]),   cos(theta[0]);
 
-    Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
-    R_y <<
-        cos(theta[1]),   0, sin(theta[1]),
-            0,   1,             0,
-            -sin(theta[1]),  0, cos(theta[1]);
+        Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
+        R_y <<
+            cos(theta[1]),   0, sin(theta[1]),
+                0,   1,             0,
+                -sin(theta[1]),  0, cos(theta[1]);
 
-    Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
-    R_z <<
-        cos(theta[2]), -sin(theta[2]), 0,
-            sin(theta[2]),  cos(theta[2]), 0,
-            0,              0,             1;
-    Eigen::Matrix3d R = R_x * R_y * R_z;
-    return R;
-}
+        Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
+        R_z <<
+            cos(theta[2]), -sin(theta[2]), 0,
+                sin(theta[2]),  cos(theta[2]), 0,
+                0,              0,             1;
+        Eigen::Matrix3d R = R_x * R_y * R_z;
+        return R;
+    }
+
+    Eigen::Matrix3d AngleSolve::quaternionToRotationMatrix()
+    {
+        Eigen::Matrix3d R_x;
+        float w=quaternion[0],x=quaternion[1],y=quaternion[2],z=quaternion[3];
+        R_x << 1-2*y*y-2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w,
+            2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w,
+            2*x*z-2*y*w, 2*y*z+2*w*x, 1-2*x*x-2*y*y;
+
+        float roll = atan2(2*y*z + 2*w*x,1 - 2*x*x - 2*y*y)/CV_PI * 180.0f;
+        float pitch = asin(2*w*y - 2*x*z)/CV_PI*180.0f;
+        float yaw = atan2(2*x*y + 2*w*z, 1 - 2*y*y - 2*z*z)/CV_PI*180.0f;
+
+        std::cout<<"----------[quaternion_euler]-----------"<<std::endl;
+        std::cout<<"[roll:]   |"<<roll<<std::endl;
+        std::cout<<"[pitch:]  |"<<pitch<<std::endl;
+        std::cout<<"[yaw:]    |"<<yaw<<std::endl;
+        std::cout<<"----------[get_from_weifeng_euler]-----------"<<std::endl;
+        std::cout<<"[get_yaw:]     |"<<ab_yaw<<std::endl;
+        std::cout<<"[get_pitch:]   |"<<ab_pitch<<std::endl;
+
+        return R_x;
+    }
 
     void AngleSolve::init(float r, float p, float y, float speed)
     {
@@ -144,39 +171,17 @@ Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
         return pixel_pos;
     }
 
-    Eigen::Vector3d AngleSolve::pixel2imu(Armor armor, int method)
+    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor, int method)
     {
         armor.camera_position = pnpSolve(armor.armor_pt4,armor.type,method);
         Eigen::Vector3d imu_pos = cam2imu(armor.camera_position);
         return imu_pos;
     }
 
-    Eigen::Vector3d AngleSolve::pixel2cam(Armor armor, int method)
+    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor, int method)
     {
         armor.camera_position = pnpSolve(armor.armor_pt4,armor.type,method);
         return armor.camera_position;
-    }
-
-    Eigen::Vector3d AngleSolve::transformPos2_World(Vector3d &Pos)
-    {
-        //for debug
-        ab_pitch=ab_yaw=ab_roll=0;
-
-        Mat camera2_tuoluo = (Mat_<double>(3,1) << 0,0,0);
-        Mat eular = (Mat_<double>(3,1) << -ab_pitch/180*CV_PI, -ab_yaw/180*CV_PI, -ab_roll/180*CV_PI);
-        Mat rotated_mat,coordinate_mat;
-        Rodrigues(camera2_tuoluo,coordinate_mat);
-        Rodrigues(eular,rotated_mat);
-
-        cv2eigen(rotated_mat,rotated_matrix);
-        cv2eigen(coordinate_mat,coordinate_matrix);
-
-        return coordinate_matrix*(rotated_matrix*Pos);
-    }
-
-    Eigen::Vector3d AngleSolve::transformPos2_Camera(Eigen::Vector3d &Pos)
-    {
-        return rotated_matrix.inverse()*(coordinate_matrix.inverse()*Pos);
     }
 
     Eigen::Vector3d AngleSolve::gravitySolve(Vector3d &Pos)
@@ -192,11 +197,13 @@ Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
 
     }
 
-    Eigen::Vector3d AngleSolve::airResistanceSolve(Vector3d &Pos)
+    Eigen::Vector3d AngleSolve::airResistanceSolve(Vector3d Pos)
     {
+        // std::cout<<"fvgbhjkvghbj: "<< Pos.transpose()  <<std::endl;
         //at world coordinate system
-        float y = -(float)Pos(2,0);
-        float x = (float)sqrt(Pos(0,0)*Pos(0,0)+Pos(1,0)*Pos(1,0));
+        float y = -(float)Pos(1,0);
+        // -----------取消水平距离的融合，只用z和y计算pitch----------
+        float x = (float)sqrt(/*Pos(0,0)*Pos(0,0)+*/ Pos(2,0)*Pos(2,0));
         float y_temp, y_actual, dy;
         float a;
         y_temp = y;
@@ -210,10 +217,11 @@ Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
             if (fabsf(dy) < 0.001) {
                 break;
             }
-            //printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
+            // printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
         }
 
-        return Vector3d(Pos(0,0),Pos(1,0),-y_temp);
+        return Vector3d(Pos(0,0),-y_temp,Pos(2,0));  // cam
+//        return Vector3d(Pos(0,0),Pos(1,0),-y_temp);  // imu
     }
 
     Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type, int method = SOLVEPNP_IPPE)
@@ -287,7 +295,7 @@ Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
         std::cout<<"m_rd:"<<m_rd<<std::endl;
         std::cout<<"tvec:"<<cam2pixel(tv)<<std::endl;
 
-imshow("pnp_check",pnp_check);
+        imshow("pnp_check",pnp_check);
 #endif
 
         return tv;
@@ -296,7 +304,7 @@ imshow("pnp_check",pnp_check);
     float AngleSolve::BulletModel(float x, float v, float angle) { //x:m,v:m/s,angle:rad
         float y;
         fly_time = (float)((exp(SMALL_AIR_K * x) - 1) / (SMALL_AIR_K * v * cos(angle)));
-        y = (float)(v * sin(angle) * fly_time - GRAVITY * fly_time * fly_time / 2);
+        y = (float)(v * sin(angle) * fly_time - GRAVITY * fly_time * fly_time/* * cos(ab_pitch)*/ / 2);   // 在相机坐标系下需要这个垂直夹角
         //printf("fly_time:%f\n",fly_time);
         return y;
     }
@@ -321,35 +329,6 @@ imshow("pnp_check",pnp_check);
     {
         return pos.norm() / bullet_speed;
     }
-
-    void AngleSolve::getAngle1(Armor &aimArmor)
-    {
-
-        ////sample////
-        Vector3d po;
-        po << 1,0,0;
-        /////////////
-        Vector3d aimPosition,worldPosition,world_dropPosition,camera_dropPosition;
-        aimPosition = pnpSolve(aimArmor.armor_pt4, aimArmor.type, SOLVEPNP_IPPE);//use PnP to get aim position
-
-        worldPosition = transformPos2_World(aimPosition);//transform aim position to world coordinate system
-
-        //world_dropPosition = gravitySolve(worldPosition);//calculate gravity
-
-        world_dropPosition = airResistanceSolve(worldPosition);//calculate gravity and air resistance
-
-        camera_dropPosition = transformPos2_Camera(world_dropPosition);//transform position to camera coordinate system to get angle
-
-        yawPitchSolve(camera_dropPosition);//get need yaw and pitch
-
-        ////output result/////
-        std::cout<<worldPosition[0]<<std::endl;
-        std::cout<<worldPosition[1]<<std::endl;
-        std::cout<<worldPosition[2]<<std::endl;
-        /////////////////////
-
-    }
-
 
 
     void AngleSolve::getAngle(Eigen::Vector3d predicted_position)

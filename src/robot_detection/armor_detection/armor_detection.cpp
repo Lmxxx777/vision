@@ -1,13 +1,12 @@
 #include "armor_detection.hpp"
 
-#define BINARY_SHOW
-
-//#define DRAW_LIGHTS_CONTOURS
-#define DRAW_LIGHTS_RRT
+// #define BINARY_SHOW
+// #define DRAW_LIGHTS_CONTOURS
+// #define DRAW_LIGHTS_RRT
 #define SHOW_NUMROI
-//#define DRAW_ARMORS_RRT
-#define DRAW_FINAL_ARMOR_S_CLASS
-//#define DRAW_FINAL_ARMOR_MAIN
+// #define ERROR_DETECTION
+// #define DRAW_ARMORS_RRT
+// #define DRAW_FINAL_ARMOR_S_CLASS
 
 using namespace cv;
 using namespace std;
@@ -18,7 +17,7 @@ namespace robot_detection {
     {
         cnt=0;
 
-        FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
+        FileStorage fs("src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70
@@ -50,15 +49,20 @@ namespace robot_detection {
         id_grade_ratio = (double)fs["id_grade_ratio"];
         near_grade_ratio = (double)fs["near_grade_ratio"];
         height_grade_ratio = (double)fs["height_grade_ratio"];
-
         grade_standard = (int)fs["grade_standard"]; // 及格分
+
+        //thresh_confidence
+        thresh_confidence = (double)fs["thresh_confidence"];
+        //enemy_color
+        enemy_color = COLOR(((string)fs["enemy_color"]));
 
         fs.release();
     }
 
     void ArmorDetector::setImage(const Mat &src)
     {
-        _src = src;
+        src.copyTo(_src);
+        src.copyTo(showSrc);
 
         //二值化
         Mat gray;
@@ -113,9 +117,11 @@ namespace robot_detection {
         cv::findContours(_binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
 #ifdef DRAW_LIGHTS_CONTOURS
+        Mat lights_contour_src;
+        _src.copyTo(lights_contour_src);
         for(int i=0;i< contours.size();i++)
-    cv::drawContours(_src,contours,i,Scalar(255,0,0),2,LINE_8);
-    imshow("contours_src",_src);
+            cv::drawContours(lights_contour_src,contours,i,Scalar(255,0,255),2,LINE_8);
+        imshow("DRAW_LIGHTS_CONTOURS",lights_contour_src);
 #endif
 
         if (contours.size() < 2)
@@ -123,9 +129,6 @@ namespace robot_detection {
             printf("no 2 contours\n");
             return;
         }
-
-        //for show
-        Mat light_show = _src.clone();
 
         for (auto & contour : contours)
         {
@@ -170,24 +173,23 @@ namespace robot_detection {
                     if(light.lightColor == color)
                     {
                         candidateLights.emplace_back(light);
-#ifdef DRAW_LIGHTS_RRT
-
-                        Point2f vertice_lights[4];
-                        light.points(vertice_lights);
-                        for (int i = 0; i < 4; i++) {
-                            line(light_show, vertice_lights[i], vertice_lights[(i + 1) % 4], CV_RGB(255, 0, 0),2,LINE_8);
-                        }
-                        //circle(_src,light.center,5,Scalar(0,0,0),-1);
-
-#endif //DRAW_LIGHTS_RRT
                     }
                 }
             }
         }
 #ifdef DRAW_LIGHTS_RRT
-        imshow("lights-show-_src", light_show);
+        Mat lights_show;
+        _src.copyTo(lights_show);
+        for(int i=0;i<candidateLights.size();++i)
+        {
+            Point2f vertice_lights[4];
+            candidateLights[i].points(vertice_lights);
+            for (int i = 0; i < 4; ++i) {
+                line(lights_show, vertice_lights[i], vertice_lights[(i + 1) % 4], CV_RGB(255, 0, 255),2,LINE_8);
+            }
+        }
+        imshow("DRAW_LIGHTS_RRT", lights_show);
 #endif //DRAW_LIGHTS_RRT
-//cout<<"dengtiao  geshu:  "<<candidateLights.size()<<endl;
     }
 
     void ArmorDetector::matchLights()
@@ -266,52 +268,60 @@ namespace robot_detection {
 
                         candidateArmors.emplace_back(armor);
 #ifdef DRAW_ARMORS_RRT
-                        //cout<<"LightI_angle :   "<<lightI.angle<<"   LightJ_angle :   "<<lightJ.angle<<"     "<<fabs(lightI.angle - lightJ.angle)<<endl;
+                    //cout<<"LightI_angle :   "<<lightI.angle<<"   LightJ_angle :   "<<lightJ.angle<<"     "<<fabs(lightI.angle - lightJ.angle)<<endl;
                     //cout<<"armorAngle   :   "<<armorAngle * 180 / CV_PI <<endl;
                     //cout<<"    w/h      :   "<<armorWidth/armorHeight<<endl;
                     //cout<<"height-offset:   "<<fabs(lightI.height - lightJ.height) / armorHeight<<endl;
                     //cout<<" height-ratio:   "<<armor_ij_ratio<<endl;
-
-                    Point2f vertice_armors[4];
-                    armor.points(vertice_armors);
-                    for (int m = 0; m < 4; m++)
-                    {
-                        line(armors_show, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(0, 255, 255),2,LINE_8);
-                    }
-                    //circle(_src,armorCenter,15,Scalar(0,255,255),-1);
-                    imshow("armors-show-_src", armors_show);
-                    putText(armors_show,to_string(armorAngle),armor.armor_pt4[3],FONT_HERSHEY_COMPLEX,1.0,Scalar(0,255,255),2,8);
-
 #endif //DRAW_ARMORS_RRT
                     }
                 }
-
             }
         }
+#ifdef DRAW_ARMORS_RRT
+        Mat armors_show;
+        _src.copyTo(armors_show);
+        for(int i=0;i<candidateArmors.size();++i)
+        {
+            Point2f vertice_armors[4];
+            candidateArmors[i].points(vertice_armors);
+            for (int m = 0; m < 4; ++m)
+            {
+                line(armors_show, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(255, 0, 255),2,LINE_8);
+            }    
+        }
+        imshow("DRAW_ARMORS_RRT", armors_show);
+#endif //DRAW_ARMORS_RRT
     }
 
     void ArmorDetector::chooseTarget()
     {
+#ifdef ERROR_DETECTION
+        Mat error_aim;
+        _src.copyTo(error_aim);
+#endif //ERROR_DETECTION
 
         if(candidateArmors.empty())
         {
-            //cout<<"no target!!"<<endl;
-//        finalArmor = Armor();
+            // cout<<"no target!!"<<endl;
+            // finalArmor = Armor();
             return;
         }
         else if(candidateArmors.size() == 1)
         {
             //cout<<"get 1 target!!"<<endl;
             detectNum(candidateArmors[0]);
-            if(candidateArmors[0].confidence < THRESH_CONFIDENCE)
-                return;
-            if(candidateArmors[0].id == 2 || candidateArmors[0].id == 0)
+            if(candidateArmors[0].confidence < thresh_confidence || candidateArmors[0].id == 2 || candidateArmors[0].id == 0)
             {
+#ifdef ERROR_DETECTION
+                string information = to_string(candidateArmors[0].id) + ":" + to_string(candidateArmors[0].confidence*100) + "%";
+                putText(error_aim, information,candidateArmors[0].armor_pt4[3],FONT_HERSHEY_COMPLEX,1,Scalar(255,0,255),1,8);
+#endif //ERROR_DETECTION
                 return;
             }
-            candidateArmors[0].grade = 100;
-            if (candidateArmors[0].grade > grade_standard)
+            if(candidateArmors[0].confidence > thresh_confidence && candidateArmors[0].id != 2 && candidateArmors[0].id != 0)
             {
+                candidateArmors[0].grade = 100;
                 finalArmors.emplace_back(candidateArmors[0]);
             }
         }
@@ -319,17 +329,21 @@ namespace robot_detection {
         {
             //cout<<"get "<<candidateArmors.size()<<" target!!"<<endl;
 
-            sort(candidateArmors.begin(),candidateArmors.end(), height_sort);
+            sort(candidateArmors.begin(),candidateArmors.end(),
+                [](Armor &candidate1,Armor &candidate2){return candidate1.size.height > candidate2.size.height;});
 
             // 获取每个候选装甲板的id和type
 
             for(int i = 0; i < candidateArmors.size(); ++i) {
                 detectNum(candidateArmors[i]);
-                if(candidateArmors[i].confidence < THRESH_CONFIDENCE)
+                if(candidateArmors[i].confidence < thresh_confidence || candidateArmors[i].id == 2 || candidateArmors[i].id == 0)
+                {
+#ifdef ERROR_DETECTION
+                    string information = to_string(candidateArmors[i].id) + ":" + to_string(candidateArmors[i].confidence*100) + "%";
+                    putText(error_aim, information,candidateArmors[i].armor_pt4[3],FONT_HERSHEY_COMPLEX,1,Scalar(0,255,255),1,8);
+#endif //ERROR_DETECTION
                     continue;
-                if (candidateArmors[i].id == 2 || candidateArmors[i].id == 0)
-                    continue;
-
+                }
                 // 装甲板中心点在屏幕中心部分，在中心部分中又是倾斜最小的，
                 // 如何避免频繁切换目标：缩小矩形框就是跟踪到了，一旦陀螺则会目标丢失，
                 // UI界面做数字选择，选几就是几号，可能在切换会麻烦，（不建议）
@@ -345,37 +359,43 @@ namespace robot_detection {
                 //2、在缩小roi内就给分，不在不给分（分数占比较低）
                 //3、90度减去装甲板的角度除以90得到比值乘上标准分作为得分
                 //4、在前三步打分之前对装甲板进行高由大到小排序，获取最大最小值然后归一化，用归一化的高度值乘上标准分作为得分
-
-                candidateArmors[i].grade = armorGrade(candidateArmors[i]);
-
-                if (candidateArmors[i].grade > grade_standard)
+                if(candidateArmors[i].confidence > thresh_confidence && candidateArmors[i].id != 2 && candidateArmors[i].id != 0)
                 {
-                    finalArmors.emplace_back(candidateArmors[i]);
+                    candidateArmors[i].grade = armorGrade(candidateArmors[i]);
+                    if (candidateArmors[i].grade > grade_standard)
+                    {
+                        finalArmors.emplace_back(candidateArmors[i]);
+                    }
                 }
             }
         }
 
+#ifdef ERROR_DETECTION
+        imshow("ERROR_DETECTION", error_aim);
+#endif //ERROR_DETECTION
+
 #ifdef DRAW_FINAL_ARMOR_S_CLASS
-        Mat final_armors_src = _src.clone();
+        Mat final_armors_src;
+        _src.copyTo(final_armors_src);
         // std::cout<<"final_armors_size:   "<<finalArmors.size()<<std::endl;
 
-        for(size_t i = 0; i < finalArmors.size(); i++)
+        for(size_t i = 0; i < finalArmors.size(); ++i)
         {
-//        Point2f armor_pts[4];
-//        finalArmors[i].points(armor_pts);
-            for (int j = 0; j < 4; j++)
+            // Point2f armor_pts[4];
+            // finalArmors[i].points(armor_pts);
+            for (int j = 0; j < 4; ++j)
             {
-                line(final_armors_src, finalArmors[i].armor_pt4[j], finalArmors[i].armor_pt4[(j + 1) % 4], CV_RGB(255, 255, 0), 2);
+                line(final_armors_src, finalArmors[i].armor_pt4[j], finalArmors[i].armor_pt4[(j + 1) % 4], CV_RGB(255, 0, 255), 2);
             }
-
-            double ff = finalArmors[i].grade;
-            string information = to_string(finalArmors[i].id) + ":" + to_string(finalArmors[i].confidence*100) + "%";
-//        putText(final_armors_src,ff,finalArmors[i].center,FONT_HERSHEY_COMPLEX, 1.0, Scalar(12, 23, 200), 1, 8);
-            putText(final_armors_src, information,finalArmors[i].armor_pt4[3],FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,255));
+            
+            string info_id = to_string(finalArmors[i].id) + ":" + to_string(finalArmors[i].confidence*100) + "%";
+            putText(final_armors_src,info_id   ,finalArmors[i].armor_pt4[3],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
+            string info_grade = "grade: "+to_string(finalArmors[i].grade);
+            putText(final_armors_src,info_grade,finalArmors[i].armor_pt4[3],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
         }
 
         if(finalArmors.size() != 0)
-            imshow("final_armors-show", final_armors_src);
+            imshow("DRAW_FINAL_ARMOR_S_CLASS", final_armors_src);
 #endif //DRAW_FINAL_ARMOR_S_CLASS
     }
 
@@ -385,24 +405,12 @@ namespace robot_detection {
         finalArmors.clear();
         candidateArmors.clear();
         candidateLights.clear();
-        originSrc = src.clone();
 
         //do autoaim task
         setImage(src);
         findLights(color);
         matchLights();
         chooseTarget();
-
-#ifdef DRAW_FINAL_ARMOR_MAIN
-        Mat target = src.clone();
-    Point2f vertice_armor[4];
-    finalArmor.points(vertice_armor);
-    for (int i = 0; i < 4; i++) {
-        line(target, vertice_armor[i], vertice_armor[(i + 1) % 4], CV_RGB(0, 255, 0));
-    }
-    imshow("target-show", target);
-#endif //DRAW_FINAL_ARMOR_MAIN
-
 
         return finalArmors;
     }
@@ -439,19 +447,15 @@ namespace robot_detection {
         // Get ROI
         numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
 
-        // Binarize
-//    cvtColor(numDst, numDst, cv::COLOR_RGB2GRAY);
-//    threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-
         dnn_detect(numDst, armor);
 #ifdef SHOW_NUMROI
-        if (/*(armor.id!=0)&&*/(armor.confidence > THRESH_CONFIDENCE))
+        if ((armor.id!=0)&&(armor.confidence > THRESH_CONFIDENCE))
         {
-            resize(numDst,numDst,Size(400,600));
-            cvtColor(numDst, numDst, cv::COLOR_RGB2GRAY);
+            resize(numDst, numDst,Size(200,300));
+            cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
             threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-//        printf("%d",armor.id);
-            imshow("number_show",numDst);
+            string name = to_string(armor.id) + ":" + to_string(armor.confidence*100) + "%";
+            imshow("name", numDst);
             std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
         }
 #endif
@@ -513,9 +517,14 @@ namespace robot_detection {
                           height_grade * height_grade_ratio +
                           near_grade  * near_grade_ratio;
 
-        std::cout<<id_grade * id_grade_ratio<<"   "<<height_grade * height_grade_ratio<<"   "<<near_grade * near_grade_ratio<<"    "<<final_grade<<std::endl;
+        // std::cout<<id_grade * id_grade_ratio<<"   "<<height_grade * height_grade_ratio<<"   "<<near_grade * near_grade_ratio<<"    "<<final_grade<<std::endl;
 
         return final_grade;
+    }
+
+    void ArmorDetector::dnn_detect(cv::Mat frame, Armor& armor)// 调用该函数即可返回数字ID
+    {
+        return dnnDetect.net_forward(dnnDetect.img_processing(std::move(frame)), armor.id, armor.confidence);
     }
 
 }

@@ -14,7 +14,9 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-#include "robot_msgs/EulerAngles.h"
+#include "robot_msgs/vision.h"
+#include "robot_msgs/robot_ctrl.h"
+// #include "robot_msgs/EulerAngles.h"
 //opencv
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -46,6 +48,9 @@ double gimbal_pitch, gimbal_yaw, gimbal_roll;
 double offset_x, offset_y, offset_z;
 bool first = false;
 double r,p,y;
+
+
+ros::Publisher vision_pub_;
 
 // clock_t
 // clock_t image_timestamp_;
@@ -104,7 +109,7 @@ void ImageCallback(const sensor_msgs::ImageConstPtr& src_msg/*, const sensor_msg
   // Time
   // begin = end;
 }
-
+/*
 void ImuCallback(const robot_msgs::EulerAnglesConstPtr &imu_msg)
 {
   robot_msgs::EulerAngles Euler_angle;
@@ -188,13 +193,106 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::Eule
   cv::imshow("main-result-image", src);
   cv::waitKey(1);
 }
+*/
+void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visionConstPtr &imu_msg)
+{
+  //  ---   calculate time   ---
+  // Time for fps
+  ros::Time begin = ros::Time::now();
+
+  // begin for predict
+  double now_time = (double)cv::getTickCount();
+  
+  // camera
+  src = cv_bridge::toCvCopy(src_msg, "bgr8")->image;
+  // ROS_INFO("show miage's width %d \n", src.cols);
+
+  // imu
+  robot_msgs::vision vision_data;
+  vision_data = *imu_msg;
+  int enemy_color = vision_data.id;
+  float roll = vision_data.roll;
+  float pitch = vision_data.pitch;
+  float yaw = vision_data.yaw;
+  float bullet_speed = 28;
+  int mode = vision_data.shoot_sta;
+  
+  // ROS_INFO("gimbal_roll  is  %lf \n", roll);
+  // ROS_INFO("gimbal_pitch is  %lf \n", pitch);
+  // ROS_INFO("gimbal_yaw   is  %lf \n", yaw);
+  // ROS_INFO("enemy_color  is  %d  \n", enemy_color);
+  // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
+  // ROS_INFO("mode         is  %x  \n", mode);
+
+  // detecting
+  Targets = Detect.autoAim(src, enemy_color);
+  if (!Targets.empty())
+  {
+    std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
+  }
+  else
+  {
+    std::cout<<"no target!!!"<<std::endl;
+  }
+
+  // tracking
+  robot_msgs::robot_ctrl send_data;
+  Track.AS.init(roll, pitch, yaw, bullet_speed);
+  bool track_bool = Track.locateEnemy(src,Targets,now_time);
+  // track_bool = false;
+  if(track_bool)
+  {
+    send_data.pitch = Track.pitch;
+    send_data.yaw = Track.yaw;
+    std::cout<<"track!!!"<<Track.tracker_state<<"  id: "<<Track.tracking_id<<std::endl;
+  }
+  else
+  {
+    send_data.pitch = Track.pitch;
+    send_data.yaw = Track.yaw;
+    // send_data.pitch = Track.AS.ab_pitch;
+    // send_data.yaw = Track.AS.ab_yaw;
+    std::cout<<"loss!!!"<<std::endl;
+  }
+
+  // send_data.pitch = 12;
+  // send_data.yaw = 34;
+  std::cout<<send_data.pitch<<"        "<<send_data.yaw<<std::endl;
+  // send message
+  vision_pub_.publish(send_data);
+  cv::putText(src,"PITCH    : "+std::to_string(send_data.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+  cv::putText(src,"YAW      : "+std::to_string(send_data.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+  cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,120),cv::FONT_HERSHEY_COMPLEX,1,cv::Scalar(255,255,0),1,3);
+
+  cv::Point2f vertice_lights[4];
+  Track.enemy_armor.points(vertice_lights);
+  for (int i = 0; i < 4; i++) {
+    line(src, vertice_lights[i], vertice_lights[(i + 1) % 4], CV_RGB(0, 255, 255),2,cv::LINE_8);
+  }
+    std::string information = std::to_string(Track.enemy_armor.id) + ":" + std::to_string(Track.enemy_armor.confidence*100) + "%";
+//        putText(final_armors_src,ff,finalArmors[i].center,FONT_HERSHEY_COMPLEX, 1.0, Scalar(12, 23, 200), 1, 8);
+                putText(src, information,Track.enemy_armor.armor_pt4[3],cv::FONT_HERSHEY_COMPLEX,2,cv::Scalar(255,0,255),1,3);
+
+
+
+  // Time
+  ros::Time end = ros::Time::now();
+  ros::Duration duration_t = end - begin;
+  double delta_tt = duration_t.toSec();
+  cv::putText(src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+  ROS_INFO("FPS %lf \n", 1/delta_tt);
+
+  // show image
+  cv::imshow("main-result-image", src);
+  cv::waitKey(1);
+}
 
 int main(int argc, char  *argv[])
 {
   setlocale(LC_ALL,"");
   ros::init(argc,argv,"mv_camera_sub");
   ros::NodeHandle nh;
-
+  vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
 
   image_transport::ImageTransport it(nh);
   // image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")
@@ -202,12 +300,15 @@ int main(int argc, char  *argv[])
   // ros::Subscriber imu_sub = nh.subscribe("imu",1,imuCallback);
 
   message_filters::Subscriber<sensor_msgs::Image> camera_src_sub(nh, "image_raw", 1);  
-  message_filters::Subscriber<robot_msgs::EulerAngles> camera_imu_sub(nh, "euler_angles", 1);  
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::EulerAngles> MySyncPolicy;
+  // // fdilink_ahrs
+  // message_filters::Subscriber<robot_msgs::EulerAngles> camera_imu_sub(nh, "euler_angles", 1);  
+  // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::EulerAngles> MySyncPolicy;
+  // // c 板
+  message_filters::Subscriber<robot_msgs::vision> camera_imu_sub(nh, "vision_data", 1);  
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::vision> MySyncPolicy;
   // // // // ExactTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
   message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), camera_src_sub, camera_imu_sub);
-  sync.registerCallback(boost::bind(&callback, _1, _2));
-
+  sync.registerCallback(boost::bind(&callback2, _1, _2));
 
   ros::spin();
   return 0;

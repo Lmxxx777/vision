@@ -64,10 +64,13 @@ namespace robot_detection {
         bool isChangeSameID;  // 单个目标不用切换
 
         double new_old_threshold; // 新旧坐标的距离阈值
-        double cur_pre_threshold; // 当前和预测的坐标点的距离阈值
+        // double cur_pre_threshold; // 当前和预测的坐标点的距离阈值
+
         Eigen::Matrix<double,6,1> predicted_enemy;
         Eigen::Vector3d predicted_position;  // 预测的坐标，也是要发送给电控角度的坐标计算的角度
         Eigen::Vector3d predicted_speed;  // 预测得到的速度
+
+        Eigen::Vector3d camera_pos; 
 
         double countArmorIoU(Armor armor1, Armor armor2);
     };

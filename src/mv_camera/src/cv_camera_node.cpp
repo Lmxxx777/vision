@@ -23,7 +23,7 @@ int main(int argc, char **argv)
       end = ros::Time::now();
       ros::Duration duration = end - begin;
       double delta_tt = duration.toSec();
-      ROS_INFO("FPS %lf \n", 1/delta_tt);
+      ROS_INFO("cam_FPS %lf \n", 1/delta_tt);
       begin = end;
 
       driver.proceed();

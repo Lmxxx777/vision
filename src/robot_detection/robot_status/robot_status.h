@@ -9,6 +9,12 @@
 #define BIG_LIGHT_AIR_K 0.00530
 
 namespace robot_detection {
+
+    using seconds_duration = std::chrono::duration<double>;
+    using milliseconds_duration = std::chrono::duration<double,std::milli>;
+    using microseconds_duration = std::chrono::duration<double,std::micro>;
+    using chrono_time = decltype(std::chrono::high_resolution_clock::now());
+
     //robot basic classes
     enum EnemyColor { RED = 1, BLUE = 2 };
     enum EnemyType  { SMALL = 1, BIG = 2 };
@@ -23,6 +29,7 @@ namespace robot_detection {
         float ab_pitch;
         float ab_yaw;
         float ab_roll;
+        float quaternion[4];
         float bullet_speed;
         int enemy_color;
 
@@ -30,8 +37,8 @@ namespace robot_detection {
 
         void clone(robot_state &robot);
 
-        void updateData(float data[4]);
-        void updateData(float data[4], int color);
+        void updateData(float data[4], float quat[4]);
+        void updateDataColor(float data[4], float quat[4], int color);
     };
 
 }
