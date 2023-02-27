@@ -18,6 +18,14 @@ namespace robot_detection {
         TRACKING,    // 处于跟踪状态
     };
 
+    // struct Jump_tracker {
+    //     Jump_tracker() = default;
+    //     chrono_time jump_time;
+    //     double delta_t;
+    //     double delta_x;
+    //     Armor jump_armor;
+    // };
+
     class ArmorTracker
     {
     public:
@@ -32,11 +40,14 @@ namespace robot_detection {
 
         bool initial(std::vector<Armor> find_armors);
 
-        bool selectEnemy2(std::vector<Armor> find_armors, double dt);
+        bool selectEnemy(std::vector<Armor> find_armors, double dt);
 
         bool estimateEnemy(double dt);
 
         bool locateEnemy(cv::Mat src, std::vector<Armor> armors, double time);
+
+        // bool updateSpinScore();
+        // void spin_detect();
 
 //    private:
 
@@ -65,12 +76,27 @@ namespace robot_detection {
 
         double new_old_threshold; // 新旧坐标的距离阈值
         // double cur_pre_threshold; // 当前和预测的坐标点的距离阈值
+        // bool wait_start;
+        // chrono_time t;
 
         Eigen::Matrix<double,6,1> predicted_enemy;
         Eigen::Vector3d predicted_position;  // 预测的坐标，也是要发送给电控角度的坐标计算的角度
         Eigen::Vector3d predicted_speed;  // 预测得到的速度
 
         Eigen::Vector3d camera_pos; 
+
+        // // anti-top
+        // double anti_spin_max_r_multiple;         // 符合陀螺条件，反陀螺分数增加倍数
+        // int anti_spin_judge_low_thres;           // 小于该阈值认为该车已关闭陀螺
+        // int anti_spin_judge_high_thres;          // 大于该阈值认为该车已开启陀螺
+        // int max_delta_t;                    //使用同一预测器的最大时间间隔(ms)
+        // double max_delta_dist;              // 最大追踪距离
+        // Jump_tracker jump_tracker;
+
+        // std::map<int,int> new_armors_cnt_map;          //装甲板计数map，记录新增装甲板数
+        // std::multimap<int, SpinTracker> trackers_map;  //预测器Map
+        // std::map<int,SpinHeading> spin_status_map;     // 记录该车小陀螺状态（未知，顺时针，逆时针）
+        // std::map<int,double> spin_score_map;           // 记录各装甲板小陀螺可能性分数，大于0为逆时针旋转，小于0为顺时针旋转
 
         double countArmorIoU(Armor armor1, Armor armor2);
     };

@@ -10,9 +10,9 @@ namespace robot_detection{
     public:
         AngleSolve();
 
-        void init(float r, float p, float y, float speed);
+        void init(float r, float p, float y, float quat[4], float speed);
 
-        void getAngle(Eigen::Vector3d predicted_position);
+        Eigen::Vector3d getAngle(Eigen::Vector3d predicted_position);
 
 //private:
 
@@ -40,7 +40,7 @@ namespace robot_detection{
         
         Eigen::Matrix3d eulerAnglesToRotationMatrix(Eigen::Vector3d &theta);
         Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta);
-        Eigen::Matrix3d quaternionToRotationMatrix();
+        Eigen::Matrix3d quaternionToRotationMatrix(float quaternion[4]);
 
         Eigen::Vector3d cam2imu(Eigen::Vector3d cam_pos);
         Eigen::Vector3d imu2cam(Eigen::Vector3d imu_pos);
@@ -51,15 +51,12 @@ namespace robot_detection{
 
         Eigen::Vector3d pnpSolve(cv::Point2f *p, int type, int method);
 
-        Eigen::Vector3d gravitySolve(Eigen::Vector3d &Pos);//just consider gravity no air resistance consider
-
         Eigen::Vector3d airResistanceSolve(Eigen::Vector3d Pos);//consider gravity asn air resistance
 
         Eigen::Vector3d yawPitchSolve(Eigen::Vector3d &Pos);
 
         float BulletModel(float x, float v, float angle);
 
-        double getFlyTime();
         double getFlyTime(Eigen::Vector3d &pos);
     };
 

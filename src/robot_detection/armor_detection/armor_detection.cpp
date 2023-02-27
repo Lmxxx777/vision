@@ -17,7 +17,7 @@ namespace robot_detection {
     {
         cnt=0;
 
-        FileStorage fs("src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
+        FileStorage fs("../src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70
@@ -391,7 +391,7 @@ namespace robot_detection {
             string info_id = to_string(finalArmors[i].id) + ":" + to_string(finalArmors[i].confidence*100) + "%";
             putText(final_armors_src,info_id   ,finalArmors[i].armor_pt4[3],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
             string info_grade = "grade: "+to_string(finalArmors[i].grade);
-            putText(final_armors_src,info_grade,finalArmors[i].armor_pt4[3],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
+            putText(final_armors_src,info_grade,finalArmors[i].armor_pt4[0],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
         }
 
         if(finalArmors.size() != 0)
@@ -449,7 +449,7 @@ namespace robot_detection {
 
         dnn_detect(numDst, armor);
 #ifdef SHOW_NUMROI
-        if ((armor.id!=0)&&(armor.confidence > THRESH_CONFIDENCE))
+        if ((armor.id!=0)&&(armor.confidence > thresh_confidence))
         {
             resize(numDst, numDst,Size(200,300));
             cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);

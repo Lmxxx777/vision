@@ -3,7 +3,7 @@
 #include <opencv2/core/eigen.hpp>
 
 // #define DRAW_CENTER_CIRCLE
-// #define DRAW_MATCH_ARMOR
+#define DRAW_LOCATE_MATCH_ARMOR
 // #define DRAW_BULLET_POINT
 
 #define SHOOT_DELAY 0.1
@@ -12,7 +12,7 @@ namespace robot_detection {
 
     ArmorTracker::ArmorTracker() {
 
-        cv::FileStorage fs("/home/lmx/real/other/track_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("../src/robot_detection/vision_data/track_data.yaml", cv::FileStorage::READ);
 
         KF.initial_KF();
 
@@ -30,12 +30,19 @@ namespace robot_detection {
 
         new_old_threshold = (double)fs["new_old_threshold"];
 
+        // anti_spin_max_r_multiple = (double)fs["anti_spin_max_r_multiple"];
+        // anti_spin_judge_low_thres = (int)fs["anti_spin_judge_low_thres"];
+        // anti_spin_judge_high_thres = (int)fs["anti_spin_judge_high_thres"];
+        // max_delta_t = (int)fs["max_delta_t"];
+        // max_delta_dist = (int)fs["max_delta_dist"];
+
         isChangeSameID = false;
         fs.release();
     }
 
     void ArmorTracker::reset()
     {
+        // TODO: 这里的t和wait_start怎么用
         t=-1;
         // pitch = 0;
         // yaw = 0;
@@ -73,19 +80,11 @@ namespace robot_detection {
             return false;
         }
 
-        Armor best_armor;
-        int maxGrade = 0;
-        for(auto & armor : find_armors)
-        {
-            if (armor.grade > maxGrade)
-            {
-                maxGrade = armor.grade;
-                best_armor = armor;
-            }
-        }
+        sort(find_armors.begin(),find_armors.end(),
+            [](Armor &armor1,Armor &armor2){return armor1.grade > armor2.grade;});
 
         // select enemy
-        enemy_armor = best_armor;
+        enemy_armor = find_armors[0];
         tracker_state = DETECTING;
         tracking_id = enemy_armor.id;
 
@@ -93,6 +92,8 @@ namespace robot_detection {
         KF.initial_KF();
         enemy_armor.world_position = AS.pixel2imu(enemy_armor,1);
         KF.setXPost(enemy_armor.world_position);
+        // TODO: 这里用的是x和y是水平面的,顺序和数据是否正确
+        Singer.setXpos(enemy_armor.world_position.head(2));
 //        std::cout<<enemy_armor.camera_position.norm()<<"     "<<enemy_armor.world_position.norm()<<std::endl;
 //        std::cout<<"enemy_armor.camera_position:  "<<enemy_armor.camera_position.transpose()<<std::endl;
         std::cout<<AS.ab_roll<<"     "<<AS.ab_pitch<<"     "<<AS.ab_yaw<<std::endl;
@@ -100,18 +101,28 @@ namespace robot_detection {
         return true;
     }
 
-    // dt是两帧之间时间间隔, 跟得住目标
-    bool ArmorTracker::selectEnemy2(std::vector<Armor> find_armors, double dt)
+    // dt是两帧之间时间间隔, 跟得住目标  用预测来做匹配，确定跟踪器状态
+    bool ArmorTracker::selectEnemy(std::vector<Armor> find_armors, double dt)
     {
         KF.setF(dt);
         predicted_enemy = KF.predict();
 
-#ifdef DRAW_MATCH_ARMOR
-        cv::Mat m_a = _src.clone();
+#ifdef DRAW_LOCATE_MATCH_ARMOR
+        cv::Mat pre_armor_rrt;
+        _src.copyTo(pre_armor_rrt);
         // after update 上一帧预测得出本帧的位置
-        cv::Point2f q = AS.imu2pixel(predicted_enemy.head(3));
-        cv::circle(m_a,q,enemy_armor.size.width/10,cv::Scalar(145,14,148),-1);
-#endif
+        cv::Point2f pre_armor_center = AS.imu2pixel(predicted_enemy.head(3));
+        cv::RotatedRect armor_rrect = cv::RotatedRect(pre_armor_center,
+                                                    cv::Size2f(enemy_armor.size.width,enemy_armor.size.height),
+                                                    enemy_armor.angle);
+        cv::Point2f vertice_armors[4];
+        armor_rrect.points(vertice_armors);
+        for (int m = 0; m < 4; ++m)
+        {
+            line(pre_armor_rrt, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(255, 0, 255),2,cv::LINE_8);
+        } 
+        cv::imshow("DRAW_LOCATE_MATCH_ARMOR",pre_armor_rrt);
+#endif //DRAW_LOCATE_MATCH_ARMOR
 
         Armor matched_armor;
         bool matched = false;
@@ -151,11 +162,9 @@ namespace robot_detection {
                     {
                         matched = true;
                         KF.initial_KF();
-                        // 下面这句在上面做过，不需要
-//                        armor.world_position = AS.pixel2imu(armor,1);
                         Eigen::VectorXd position_speed(6);
                         position_speed << armor.world_position, predicted_enemy.tail(3);
-                        KF.setPosAndSpeed(armor.world_position,predicted_enemy.tail(3));
+                        KF.setPosAndSpeed(armor.world_position, predicted_enemy.tail(3));
                         predicted_enemy = position_speed;
                         matched_armor = armor;
 
@@ -191,7 +200,6 @@ namespace robot_detection {
 //            std::cout<<"predicted_enemy: "<<predicted_enemy.transpose()<<std::endl;
 //            std::cout<<"P: \n"<<KF.P<<std::endl;
             enemy_armor = matched_armor;
-            camera_pos = enemy_armor.camera_position;
         }
 //        predicted_position = predicted_enemy.head(3);
 //        predicted_speed = predicted_enemy.tail(3);
@@ -265,48 +273,37 @@ namespace robot_detection {
         // 对跟踪状态和正在丢失状态时做预测
         if(tracker_state == TRACKING || tracker_state == LOSING)
         {
-            // enemy_armor get real information to predicted by singer
-            enemy_armor.world_position = AS.pixel2imu(enemy_armor,1);
-            Eigen::Matrix<double,2,1> measure(enemy_armor.world_position(0,0),enemy_armor.world_position(1,0));
-//        std::cout<<"measurex:"<<measure[0]<<std::endl;
-//        std::cout<<"measurey:"<<measure[1]<<std::endl;
-
-//               -------------------------------不加程序运行时间吗?----------------------------
-            double all_time = SHOOT_DELAY + AS.getFlyTime(enemy_armor.world_position) + dt;
+            double fly_time = AS.getFlyTime(enemy_armor.world_position);
             ////////////////Singer predictor//////////////////////////////
-            Singer.PredictInit(dt);
-//            std::cout<<"predict_front:"<<Singer.predict(false)<<std::endl;
-//            std::cout<<"correct:"<<Singer.correct(measure)<<std::endl;
-            Singer.PredictInit(all_time);
-            Eigen::Matrix<double,6,1> predicted_result = Singer.predict(true);
-//            std::cout<<"result:"<<predicted_result<<std::endl;
-            predicted_position << predicted_result(0,0),predicted_result(3,0),enemy_armor.world_position(2,0);
+            if(!Singer.SingerPrediction(dt,fly_time,
+                                        enemy_armor.world_position,
+                                        predicted_position))
+            {
+                return false;
+            }
             ////////////////Singer predictor//////////////////////////////
             return true;
         }
         else if (tracker_state == DETECTING)
         {
-            enemy_armor.world_position = AS.pixel2imu(enemy_armor,1);
-            circle(_src,enemy_armor.center,5,cv::Scalar(255,0,0),-1);
-            Eigen::Matrix<double,2,1> measure(enemy_armor.world_position(0,0),enemy_armor.world_position(1,0));
-//            std::cout<<"measurex:"<<measure[0]<<std::endl;
-//            std::cout<<"measurey:"<<measure[1]<<std::endl;
-            double all_time = SHOOT_DELAY + AS.getFlyTime(enemy_armor.world_position);
+            double fly_time = AS.getFlyTime(enemy_armor.world_position);
             ////////////////Singer predictor//////////////////////////////
-            Singer.PredictInit(dt);
-            /*std::cout<<"predict_front:"<<*/Singer.predict(false)/*<<std::endl*/;
-            /*std::cout<<"correct:"<<*/Singer.correct(measure)/*<<std::endl*/;
-            Singer.PredictInit(all_time);
-            Eigen::Matrix<double,6,1> predicted_result = Singer.predict(true);
-//            std::cout<<"result:"<<predicted_result<<std::endl;
-            predicted_position << predicted_result(0,0),predicted_result(3,0),enemy_armor.world_position(2,0);
+            if(!Singer.SingerPrediction(dt,fly_time,
+                                        enemy_armor.world_position,
+                                        predicted_position))
+            {
+                return false;
+            }
             ////////////////Singer predictor//////////////////////////////
-            locate_target = false;
+
+            // TODO: 检测状态还给false就会一直进入initial函数，历史代码是这么写的，没问题
+            // locate_target = false;
             return false;
         }
         else
         {
-            locate_target = false;
+            // TODO: reset(); 前一个函数变成MISSING会之间返回false，这个函数里这个判断无效
+            // locate_target = false;
             return false;
         }
 
@@ -317,14 +314,6 @@ namespace robot_detection {
     bool ArmorTracker::locateEnemy(cv::Mat src, std::vector<Armor> armors, double time)
     {
         src.copyTo(_src);
-        // todo:  确认发的角度数据的顺序
-//        Eigen::Vector3d theta = {AS.ab_roll/180*CV_PI,AS.ab_pitch/180*CV_PI,AS.ab_yaw/180*CV_PI};
-//        Eigen::Vector3d theta = {AS.ab_roll/180*CV_PI,AS.ab_yaw/180*CV_PI,AS.ab_pitch/180*CV_PI};
-//        Eigen::Vector3d theta = {AS.ab_pitch/180*CV_PI,AS.ab_roll/180*CV_PI,AS.ab_yaw/180*CV_PI};
-//        Eigen::Vector3d theta = {AS.ab_pitch/180*CV_PI,AS.ab_yaw/180*CV_PI,AS.ab_roll/180*CV_PI};
-//        Eigen::Vector3d theta = {AS.ab_yaw/180*CV_PI,AS.ab_pitch/180*CV_PI,AS.ab_roll/180*CV_PI};
-        Eigen::Vector3d theta = {AS.ab_yaw/180*CV_PI,AS.ab_roll/180*CV_PI,AS.ab_pitch/180*CV_PI};
-        AS.RotationMatrix_imu = AS.eulerAnglesToRotationMatrix2(theta);
 
         if(!locate_target)
         {
@@ -336,35 +325,6 @@ namespace robot_detection {
             {
                 locate_target = false;
             }
-
-             // 计算子弹落点
-            // 使用跟踪目标的相机坐标算      enemy_armor.camera_position
-            Eigen::Vector3d gun_offset = {0,0,0};   // m
-            gun_offset += camera_pos;
-
-
-
-            bullet_point = AS.airResistanceSolve(gun_offset);
-            cv::Point2f bullet_drop = AS.imu2pixel(bullet_point);
-#ifdef DRAW_BULLET_POINT
-            cv::Mat bullet = _src.clone();
-            cv::circle(bullet,bullet_drop,enemy_armor.size.width/15.0,cv::Scalar(127,255,0),-1);
-            cv::circle(bullet,enemy_armor.center,5,cv::Scalar(255,0,0),-1);
-            cv::imshow("DRAW_BULLET_POINT",bullet);
-#endif
-
-//            Eigen::Vector3d head_angle = AS.yawPitchSolve(bullet_point);
-//            pitch = head_angle[1];
-//            yaw = head_angle[2];
-
-
-// std::cout<<"fvgbhjkvghbj: "<< bullet_point.transpose()  <<std::endl;
-
-            pitch = -atan2(bullet_point[1],bullet_point[2])/CV_PI*180 + AS.ab_pitch;
-            yaw   = -atan2(bullet_point[0],bullet_point[2])/CV_PI*180 + AS.ab_yaw;
-
-
-
             return false;
         }
         else
@@ -378,25 +338,19 @@ namespace robot_detection {
 //            std::cout<<"dt:"<<dt<<std::endl;
             t = time;
 
-            if(!selectEnemy2(armors,dt))
+            if(!selectEnemy(armors,dt))
             {
-                // return false;
+                return false;
             }
 
-            // if(!estimateEnemy(dt))
-            // {
-            //     return false;
-            // }
+            if(!estimateEnemy(dt))
+            {
+                return false;
+            }
 
+            // TODO: 封装一个计算角度的函数
+            bullet_point = AS.airResistanceSolve(predicted_position);
 
-            // 计算子弹落点
-            // 使用跟踪目标的相机坐标算      enemy_armor.camera_position
-            Eigen::Vector3d gun_offset = {0,0,0};   // m
-            gun_offset += camera_pos;
-
-
-
-            bullet_point = AS.airResistanceSolve(gun_offset);
             cv::Point2f bullet_drop = AS.imu2pixel(bullet_point);
 #ifdef DRAW_BULLET_POINT
             cv::Mat bullet = _src.clone();
@@ -405,16 +359,8 @@ namespace robot_detection {
             cv::imshow("DRAW_BULLET_POINT",bullet);
 #endif
 
-//            Eigen::Vector3d head_angle = AS.yawPitchSolve(bullet_point);
-//            pitch = head_angle[1];
-//            yaw = head_angle[2];
-
-
-// std::cout<<"fvgbhjkvghbj: "<< bullet_point.transpose()  <<std::endl;
-
             pitch = -atan2(bullet_point[1],bullet_point[2])/CV_PI*180 + AS.ab_pitch;
             yaw   = -atan2(bullet_point[0],bullet_point[2])/CV_PI*180 + AS.ab_yaw;
-
 
             // std::cout<<"------------------------gimbal_angles------------------------"<<std::endl;
             // std::cout<<"delta_pitch: "<< -atan2(bullet_point[1],bullet_point[2])/CV_PI*180  <<std::endl;

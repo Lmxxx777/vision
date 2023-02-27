@@ -28,7 +28,7 @@ omni_infantry:
     data: [ 0, 0, 1,
             1, 0, 0,
             0, 1, 0 ]
-  center_offset_position: !!opencv-matrix
+  CenterOffset_cam2imu: !!opencv-matrix
     rows: 3
     cols: 1
     dt: d

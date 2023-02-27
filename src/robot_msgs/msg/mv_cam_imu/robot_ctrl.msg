@@ -1,5 +1,4 @@
-float32 vx
-float32 vy
-float32 vw
-float32 yaw
+uint16 target_lock
+uint16 fire_command
 float32 pitch
+float32 yaw

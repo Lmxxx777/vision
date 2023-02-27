@@ -1,5 +1,6 @@
 #include "robot_status.h"
 
+// 在ROS里，这些用不到
 namespace robot_detection {
         
     void robot_state::updateData(float data[4], float quat[4])

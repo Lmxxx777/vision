@@ -13,7 +13,7 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
-
+// msg
 #include "robot_msgs/vision.h"
 #include "robot_msgs/robot_ctrl.h"
 // #include "robot_msgs/EulerAngles.h"
@@ -29,6 +29,7 @@
 #include "ceres/ceres.h"
 //c++
 #include <iostream>
+#include "robot_status.h"
 #include "armor_track.h"
 
 
@@ -202,6 +203,7 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
 
   // begin for predict
   double now_time = (double)cv::getTickCount();
+  robot_detection::chrono_time t;
   
   // camera
   src = cv_bridge::toCvCopy(src_msg, "bgr8")->image;
@@ -214,66 +216,104 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
   float roll = vision_data.roll;
   float pitch = vision_data.pitch;
   float yaw = vision_data.yaw;
+  float quaternion[4];////////////  --------------------todo : add quaternion------------------------------------////////////////////
+  for(int i = 0; i<vision_data.quaternion.size(); ++i)
+    quaternion[i] = vision_data.quaternion[i];
   float bullet_speed = 28;
   int mode = vision_data.shoot_sta;
   
+  // TODO: 先验证数据的情况
   // ROS_INFO("gimbal_roll  is  %lf \n", roll);
   // ROS_INFO("gimbal_pitch is  %lf \n", pitch);
   // ROS_INFO("gimbal_yaw   is  %lf \n", yaw);
   // ROS_INFO("enemy_color  is  %d  \n", enemy_color);
   // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
   // ROS_INFO("mode         is  %x  \n", mode);
+  Track.AS.quaternionToRotationMatrix(quaternion);
+
 
   // detecting
   Targets = Detect.autoAim(src, enemy_color);
   if (!Targets.empty())
   {
-    std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
+    // std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
   }
   else
   {
-    std::cout<<"no target!!!"<<std::endl;
+    // std::cout<<"no target!!!"<<std::endl;
   }
+  cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 100,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
   // tracking
   robot_msgs::robot_ctrl send_data;
-  Track.AS.init(roll, pitch, yaw, bullet_speed);
+  Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
   bool track_bool = Track.locateEnemy(src,Targets,now_time);
   // track_bool = false;
   if(track_bool)
   {
+    send_data.fire_command = 1;
+    send_data.target_lock = 1;
     send_data.pitch = Track.pitch;
     send_data.yaw = Track.yaw;
-    std::cout<<"track!!!"<<Track.tracker_state<<"  id: "<<Track.tracking_id<<std::endl;
+    // std::cout<<"track!!!"<<Track.tracker_state<<"  id: "<<Track.tracking_id<<std::endl;
   }
   else
   {
+    send_data.fire_command = 0;
+    send_data.target_lock = 0;
     send_data.pitch = Track.pitch;
     send_data.yaw = Track.yaw;
     // send_data.pitch = Track.AS.ab_pitch;
     // send_data.yaw = Track.AS.ab_yaw;
-    std::cout<<"loss!!!"<<std::endl;
+    // std::cout<<"loss!!!"<<std::endl;
+  }
+  switch (Track.tracker_state)
+  {
+  case 0: // MISSING
+    cv::putText(src,"MISSING   ",cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    break;
+  case 1: // DETECTING
+    cv::putText(src,"DETECTING " + std::to_string(Track.tracking_id),cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    break;
+  case 2: // LOSING
+    cv::putText(src,"LOSING    " + std::to_string(Track.tracking_id),cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    break;
+  case 3: // TRACKING
+    cv::putText(src,"TRACKING  " + std::to_string(Track.tracking_id),cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    break;
   }
 
   // send_data.pitch = 12;
   // send_data.yaw = 34;
-  std::cout<<send_data.pitch<<"        "<<send_data.yaw<<std::endl;
+  // std::cout<<send_data.pitch<<"        "<<send_data.yaw<<std::endl;
+
   // send message
   vision_pub_.publish(send_data);
   cv::putText(src,"PITCH    : "+std::to_string(send_data.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
   cv::putText(src,"YAW      : "+std::to_string(send_data.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-  cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,120),cv::FONT_HERSHEY_COMPLEX,1,cv::Scalar(255,255,0),1,3);
+  cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
+  // 展示选择到的装甲板
   cv::Point2f vertice_lights[4];
   Track.enemy_armor.points(vertice_lights);
   for (int i = 0; i < 4; i++) {
-    line(src, vertice_lights[i], vertice_lights[(i + 1) % 4], CV_RGB(0, 255, 255),2,cv::LINE_8);
+    line(src, vertice_lights[i], vertice_lights[(i + 1) % 4], CV_RGB(255, 0, 255),2,cv::LINE_8);
   }
-    std::string information = std::to_string(Track.enemy_armor.id) + ":" + std::to_string(Track.enemy_armor.confidence*100) + "%";
-//        putText(final_armors_src,ff,finalArmors[i].center,FONT_HERSHEY_COMPLEX, 1.0, Scalar(12, 23, 200), 1, 8);
-                putText(src, information,Track.enemy_armor.armor_pt4[3],cv::FONT_HERSHEY_COMPLEX,2,cv::Scalar(255,0,255),1,3);
+  std::string information = std::to_string(Track.enemy_armor.id) + ":" + std::to_string(Track.enemy_armor.confidence*100) + "%";
+  putText(src, information,Track.enemy_armor.armor_pt4[3],cv::FONT_HERSHEY_SIMPLEX,2,cv::Scalar(255,255,0),1,3);
 
-
+  // 用预测位置为中心点，选择的装甲板画框
+  cv::Point2f pre_armor_center = AS.imu2pixel(Track.predicted_position);
+  cv::RotatedRect armor_rrect = cv::RotatedRect(pre_armor_center,
+                                              cv::Size2f(Track.enemy_armor.size.width,Track.enemy_armor.size.height),
+                                              Track.enemy_armor.angle);
+  cv::Point2f vertice_armors[4];
+  armor_rrect.points(vertice_armors);
+  for (int m = 0; m < 4; ++m)
+  {
+    line(src, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
+  } 
+  
 
   // Time
   ros::Time end = ros::Time::now();

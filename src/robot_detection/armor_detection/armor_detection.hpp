@@ -13,7 +13,7 @@
 #define COLOR(str) std::strcmp(str.c_str(),"RED") == 0? RED : BLUE
 
 namespace robot_detection {
-//灯条结构体
+    //灯条结构体
     struct Light : public cv::RotatedRect     //灯条结构体
     {
         Light() = default;
