@@ -203,7 +203,7 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
 
   // begin for predict
   double now_time = (double)cv::getTickCount();
-  robot_detection::chrono_time t;
+  // robot_detection::chrono_time t;
   
   // camera
   src = cv_bridge::toCvCopy(src_msg, "bgr8")->image;
@@ -242,7 +242,7 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
   {
     // std::cout<<"no target!!!"<<std::endl;
   }
-  cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 100,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+  cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
   // tracking
   robot_msgs::robot_ctrl send_data;
@@ -267,6 +267,7 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
     // send_data.yaw = Track.AS.ab_yaw;
     // std::cout<<"loss!!!"<<std::endl;
   }
+
   switch (Track.tracker_state)
   {
   case 0: // MISSING
@@ -313,7 +314,7 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
   {
     line(src, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
   } 
-  
+
 
   // Time
   ros::Time end = ros::Time::now();
@@ -325,6 +326,7 @@ void callback2(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::vis
   // show image
   cv::imshow("main-result-image", src);
   cv::waitKey(1);
+  
 }
 
 int main(int argc, char  *argv[])

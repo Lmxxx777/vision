@@ -1,4 +1,3 @@
-uint16 target_lock
-uint16 fire_command
+uint16 shoot_sta
 float32 pitch
 float32 yaw

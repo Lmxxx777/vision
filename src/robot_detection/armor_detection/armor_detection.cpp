@@ -3,7 +3,7 @@
 // #define BINARY_SHOW
 // #define DRAW_LIGHTS_CONTOURS
 // #define DRAW_LIGHTS_RRT
-#define SHOW_NUMROI
+// #define SHOW_NUMROI
 // #define ERROR_DETECTION
 // #define DRAW_ARMORS_RRT
 // #define DRAW_FINAL_ARMOR_S_CLASS
@@ -17,7 +17,7 @@ namespace robot_detection {
     {
         cnt=0;
 
-        FileStorage fs("../src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
+        FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70

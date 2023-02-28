@@ -21,20 +21,11 @@ find_package(catkin REQUIRED COMPONENTS
     rosconsole
     robot_msgs
     )
-    
-# add_message_files(
-# FILES 
-# # sc_rc_msg.msg
-# # robot_ctrl.msg
-# # vision.msg
-# )
 
 add_service_files(
 FILES 
 
 )
-
-# generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
 
@@ -50,10 +41,6 @@ include_directories(
 )
 
 add_executable(simple_robot src/robot_node.cpp src/crc.cpp src/serial_device.cpp)
-# add_dependencies(simple_robot ${${PROJECT_NAME}_EXPORTTED_TARGETS}
-#                               ${catkin_EXPORTED_TARGETS}
-#                               ${PROJECT_NAME}_generate_messages_cpp
-#                               ${PROJECT_NAME}_gencpp)
 target_link_libraries(simple_robot
     ${CMAKE_THREAD_LIBS_INIT}
     ${catkin_LIBRARIES})

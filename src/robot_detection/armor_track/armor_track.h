@@ -83,7 +83,6 @@ namespace robot_detection {
         Eigen::Vector3d predicted_position;  // 预测的坐标，也是要发送给电控角度的坐标计算的角度
         Eigen::Vector3d predicted_speed;  // 预测得到的速度
 
-        Eigen::Vector3d camera_pos; 
 
         // // anti-top
         // double anti_spin_max_r_multiple;         // 符合陀螺条件，反陀螺分数增加倍数

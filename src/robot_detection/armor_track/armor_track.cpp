@@ -12,7 +12,7 @@ namespace robot_detection {
 
     ArmorTracker::ArmorTracker() {
 
-        cv::FileStorage fs("../src/robot_detection/vision_data/track_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/track_data.yaml", cv::FileStorage::READ);
 
         KF.initial_KF();
 

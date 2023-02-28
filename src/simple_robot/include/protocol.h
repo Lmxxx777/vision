@@ -74,6 +74,8 @@ typedef struct
     float vw=0;
     float yaw=0;
     float pitch=0;
+    int8_t target_lock=0;
+    int8_t fire_command; 
 }robot_ctrl_info_t;
 
 typedef struct
@@ -92,6 +94,7 @@ typedef struct
   float pitch=0;
   float yaw=0;
   float roll=0;
+  float quaternion[4]={0};
   float shoot=0;
 } vision_t;
 
