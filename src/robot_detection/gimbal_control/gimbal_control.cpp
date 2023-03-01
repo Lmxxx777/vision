@@ -94,14 +94,14 @@ namespace robot_detection{
         float pitch = asin(2*w*y - 2*x*z)/CV_PI*180.0f;
         float yaw = atan2(2*x*y + 2*w*z, 1 - 2*y*y - 2*z*z)/CV_PI*180.0f;
 
-        std::cout<<"----------[quaternion_euler]-----------"<<std::endl;
-        std::cout<<"[roll:]   |"<<roll<<std::endl;
-        std::cout<<"[pitch:]  |"<<pitch<<std::endl;
-        std::cout<<"[yaw:]    |"<<yaw<<std::endl;
-        std::cout<<"----------[get_from_euler]-----------"<<std::endl;
-        std::cout<<"[get_roll:]     |"<<ab_roll<<std::endl;
-        std::cout<<"[get_pitch:]    |"<<ab_pitch<<std::endl;
-        std::cout<<"[get_yaw:]      |"<<ab_yaw<<std::endl;
+        // std::cout<<"----------[quaternion_euler]-----------"<<std::endl;
+        // std::cout<<"[roll:]   |"<<roll<<std::endl;
+        // std::cout<<"[pitch:]  |"<<pitch<<std::endl;
+        // std::cout<<"[yaw:]    |"<<yaw<<std::endl;
+        // std::cout<<"----------[get_from_euler]-----------"<<std::endl;
+        // std::cout<<"[get_roll:]     |"<<ab_roll<<std::endl;
+        // std::cout<<"[get_pitch:]    |"<<ab_pitch<<std::endl;
+        // std::cout<<"[get_yaw:]      |"<<ab_yaw<<std::endl;
 
         return R_x;
     }
@@ -132,9 +132,9 @@ namespace robot_detection{
         // std::cout<<"tmp_pos: "<<pos_tmp<<std::endl;
 
         Vector3d imu_pos;
+        imu_pos += CenterOffset_cam2imu;
         imu_pos = RotationMatrix_imu * pos_tmp;
         // 加上两个坐标系的中心点的偏移量，先旋转后平移
-        imu_pos += CenterOffset_cam2imu;
 
         // std::cout<<"imu_pos: "<<imu_pos<<std::endl;
         return imu_pos;
@@ -143,8 +143,8 @@ namespace robot_detection{
     Eigen::Vector3d AngleSolve::imu2cam(Vector3d imu_pos)
     {
         Vector3d tmp_pos;
-        tmp_pos -= CenterOffset_cam2imu;
         tmp_pos = RotationMatrix_imu.inverse() * imu_pos;
+        tmp_pos -= CenterOffset_cam2imu;
 
         Vector3d cam_pos;
         // cam_pos = RotationMatrix_cam2imu.inverse() * tmp_pos;
@@ -166,6 +166,8 @@ namespace robot_detection{
     {
         Vector3d cam_pos = imu2cam(imu_pos);
         cv::Point2f pixel_pos = cam2pixel(cam_pos);
+        // std::cout<<"[pixel_pos0]:"<<pixel_pos.x<<std::endl;
+        // std::cout<<"[pixel_pos1]:"<<pixel_pos.y<<std::endl;
         return pixel_pos;
     }
 
@@ -194,7 +196,7 @@ namespace robot_detection{
     {
         // std::cout<<"fvgbhjkvghbj: "<< Pos.transpose()  <<std::endl;
         //at world coordinate system
-        float y = -(float)Pos[2];
+        float y = (float)Pos[2];
         // -----------要水平距离的融合，否则计算的距离会少，在视野边缘处误差会大----------
         float x = (float)sqrt(Pos[0]*Pos[0]+ Pos[1]*Pos[1]);
 
@@ -215,7 +217,7 @@ namespace robot_detection{
         }
 
         // return Vector3d(Pos[0],-y_temp,Pos[2]);  // cam
-       return Vector3d(Pos[0],Pos[1],-y_temp);  // imu
+       return Vector3d(Pos[0],Pos[1],y_temp);  // imu
     }
 
     Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type, int method = SOLVEPNP_IPPE)
@@ -245,7 +247,7 @@ namespace robot_detection{
         cv::cv2eigen(tvec, tv);
 
 //    Mat R;
-//    Rodrigues(rvec,R);
+//    Rodrigues(rvec,R);        std::cout<<"[Pos1:]  |"<<Pos[2]<<std::endl;
 //
 //    // offset++
         std::cout<<"distance:   "<<tv.norm()<<std::endl;

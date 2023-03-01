@@ -1,6 +1,6 @@
 #include "armor_detection.hpp"
 
-// #define BINARY_SHOW
+#define BINARY_SHOW
 // #define DRAW_LIGHTS_CONTOURS
 // #define DRAW_LIGHTS_RRT
 // #define SHOW_NUMROI
@@ -126,7 +126,7 @@ namespace robot_detection {
 
         if (contours.size() < 2)
         {
-            printf("no 2 contours\n");
+            // printf("no 2 contours\n");
             return;
         }
 
@@ -139,7 +139,6 @@ namespace robot_detection {
 
             if (isLight(light, contour) && contour_area < light_area_max)
             {
-//                cout<<"ftguhjkl"<<contour_area<<endl;
                 //cout<<"is_Light   "<<endl;
                 cv::Rect rect = r_rect.boundingRect();
 
@@ -196,7 +195,7 @@ namespace robot_detection {
     {
         if(candidateLights.size() < 2)
         {
-            printf("no 2 lights\n");
+            // printf("no 2 lights\n");
             return;
         }
 

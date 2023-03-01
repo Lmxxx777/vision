@@ -3,7 +3,7 @@
 #include <opencv2/core/eigen.hpp>
 
 // #define DRAW_CENTER_CIRCLE
-#define DRAW_LOCATE_MATCH_ARMOR
+// #define DRAW_LOCATE_MATCH_ARMOR
 // #define DRAW_BULLET_POINT
 
 #define SHOOT_DELAY 0.1
@@ -94,10 +94,10 @@ namespace robot_detection {
         KF.setXPost(enemy_armor.world_position);
         // TODO: 这里用的是x和y是水平面的,顺序和数据是否正确
         Singer.setXpos(enemy_armor.world_position.head(2));
-//        std::cout<<enemy_armor.camera_position.norm()<<"     "<<enemy_armor.world_position.norm()<<std::endl;
-//        std::cout<<"enemy_armor.camera_position:  "<<enemy_armor.camera_position.transpose()<<std::endl;
-        std::cout<<AS.ab_roll<<"     "<<AS.ab_pitch<<"     "<<AS.ab_yaw<<std::endl;
-        std::cout<<"enemy_armor.world_position:  "<<enemy_armor.world_position.transpose()<<std::endl;
+        // std::cout<<enemy_armor.camera_position.norm()<<"     "<<enemy_armor.world_position.norm()<<std::endl;
+        // std::cout<<"enemy_armor.camera_position:  "<<enemy_armor.camera_position.transpose()<<std::endl;
+        // std::cout<<AS.ab_roll<<"     "<<AS.ab_pitch<<"     "<<AS.ab_yaw<<std::endl;
+        // std::cout<<"enemy_armor.world_position:  "<<enemy_armor.world_position.transpose()<<std::endl;
         return true;
     }
 
@@ -119,7 +119,7 @@ namespace robot_detection {
         armor_rrect.points(vertice_armors);
         for (int m = 0; m < 4; ++m)
         {
-            line(pre_armor_rrt, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(255, 0, 255),2,cv::LINE_8);
+            line(pre_armor_rrt, vertice_armors[m], vertice_armors[(m + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
         } 
         cv::imshow("DRAW_LOCATE_MATCH_ARMOR",pre_armor_rrt);
 #endif //DRAW_LOCATE_MATCH_ARMOR
@@ -156,9 +156,11 @@ namespace robot_detection {
             {
 //                std::cout<<"no"<<std::endl;
                 // 本帧内是否有相同ID
+                double same_armor_distance = DBL_MAX;
                 for (auto & armor : find_armors)
                 {
-                    if (armor.id == tracking_id)
+                    double dis_tmp = (enemy_armor.world_position - armor.world_position).norm();
+                    if (armor.id == tracking_id && dis_tmp < same_armor_distance)
                     {
                         matched = true;
                         KF.initial_KF();
@@ -167,8 +169,9 @@ namespace robot_detection {
                         KF.setPosAndSpeed(armor.world_position, predicted_enemy.tail(3));
                         predicted_enemy = position_speed;
                         matched_armor = armor;
-
-                        std::cout<<"track_sameID_initial!!"<<std::endl;
+                        
+                        same_armor_distance = dis_tmp;
+                        // std::cout<<"track_sameID_initial!!"<<std::endl;
                         break;
                     }
                 }
@@ -194,11 +197,10 @@ namespace robot_detection {
 
             cv::imshow("DRAW_MATCH_ARMOR",m_a);
 #endif
-
-            std::cout<<"enemy_armor_cam: "<<matched_armor.camera_position.transpose()<<std::endl;
-//            std::cout<<"enemy_armor_imu: "<<matched_armor.world_position.transpose()<<std::endl;
-//            std::cout<<"predicted_enemy: "<<predicted_enemy.transpose()<<std::endl;
-//            std::cout<<"P: \n"<<KF.P<<std::endl;
+            // std::cout<<"enemy_armor_cam: "<<matched_armor.camera_position.transpose()<<std::endl;
+            // std::cout<<"enemy_armor_imu: "<<matched_armor.world_position.transpose()<<std::endl;
+            // std::cout<<"predicted_enemy: "<<predicted_enemy.transpose()<<std::endl;
+            // std::cout<<"P: \n"<<KF.P<<std::endl;
             enemy_armor = matched_armor;
         }
 //        predicted_position = predicted_enemy.head(3);
@@ -297,7 +299,7 @@ namespace robot_detection {
             ////////////////Singer predictor//////////////////////////////
 
             // TODO: 检测状态还给false就会一直进入initial函数，历史代码是这么写的，没问题
-            // locate_target = false;
+            locate_target = false;
             return false;
         }
         else
@@ -359,8 +361,9 @@ namespace robot_detection {
             cv::imshow("DRAW_BULLET_POINT",bullet);
 #endif
 
-            pitch = -atan2(bullet_point[1],bullet_point[2])/CV_PI*180 + AS.ab_pitch;
-            yaw   = -atan2(bullet_point[0],bullet_point[2])/CV_PI*180 + AS.ab_yaw;
+            Eigen::Vector3d rpy = AS.yawPitchSolve(bullet_point);
+            pitch = rpy[1];
+            yaw   = rpy[2];
 
             // std::cout<<"------------------------gimbal_angles------------------------"<<std::endl;
             // std::cout<<"delta_pitch: "<< -atan2(bullet_point[1],bullet_point[2])/CV_PI*180  <<std::endl;

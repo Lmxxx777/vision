@@ -2,4 +2,4 @@
 ---
 find_threshold: 10
 lost_threshold: 20
-new_old_threshold: 100
+new_old_threshold: 0.1

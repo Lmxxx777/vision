@@ -10,7 +10,7 @@ namespace robot_detection {
     {
         float shoot_delay;
 
-        double alefa = 1.0/20.0;//目标机动频率
+        double alefa = 1.0/30.0;//目标机动频率
         double Sigmaq = 0.1;//目标加速度标准差，Singer模型假设目标加速度符合均值为零的高斯分布
         double initT = 0.03;//用来初始化初始协方差矩阵的采样时间间隔（估算出来的）
         double axHold = 30;//x方向的加速度调整阈值

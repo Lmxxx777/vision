@@ -15,7 +15,7 @@ Skalman::Skalman()
 
     //init R
     R << 0.00005, 0,
-         0, 0.00005;
+         0, 0.00000000005;
 
     //init Xk_1
     Xk_1 << 0,0.1,0,
@@ -239,7 +239,7 @@ bool Skalman::SingerPrediction(const double &dt,
     //std::cout<<"result:"<<predicted_result<<std::endl;
     predicted_position << predicted_result(0,0),
                         predicted_result(3,0),
-                        imu_position(2,0);
+                        imu_position(1,0);
     if (!predicted_position.norm()){
         return false;
     }
