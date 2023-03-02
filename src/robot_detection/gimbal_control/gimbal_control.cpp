@@ -128,8 +128,8 @@ namespace robot_detection{
 
         // 左右手系，单靠旋转矩阵转换不了，与其矩阵运算不如直接赋值
         // pos_tmp = RotationMatrix_cam2imu * cam_pos;
-        pos_tmp = {cam_pos[2],cam_pos[0],-cam_pos[1]};
-        // std::cout<<"tmp_pos: "<<pos_tmp<<std::endl;
+        pos_tmp = {cam_pos[0],cam_pos[2],-cam_pos[1]};
+        // std::cout<<"cam_pos: "<<cam_pos.transpose()<<std::endl;
 
         Vector3d imu_pos;
         imu_pos += CenterOffset_cam2imu;
@@ -148,7 +148,7 @@ namespace robot_detection{
 
         Vector3d cam_pos;
         // cam_pos = RotationMatrix_cam2imu.inverse() * tmp_pos;
-        cam_pos = {tmp_pos[1],-tmp_pos[2],tmp_pos[0]};
+        cam_pos = {tmp_pos[0],-tmp_pos[2],tmp_pos[1]};
         return cam_pos;
     }
 
@@ -250,7 +250,7 @@ namespace robot_detection{
 //    Rodrigues(rvec,R);        std::cout<<"[Pos1:]  |"<<Pos[2]<<std::endl;
 //
 //    // offset++
-        std::cout<<"distance:   "<<tv.norm()<<std::endl;
+        // std::cout<<"distance:   "<<tv.norm()<<std::endl;
 
 #ifdef SHOW_MEASURE_RRECT
         Mat pnp_check = _src.clone();
@@ -299,10 +299,15 @@ namespace robot_detection{
 
     Eigen::Vector3d AngleSolve::yawPitchSolve(Vector3d &Pos)
     {
+        
         Eigen::Vector3d rpy;
-        rpy[2] = atan2(Pos[1],Pos[0]) / CV_PI*180.0;
-        rpy[1] = atan2(Pos[2],Pos[0]) / CV_PI*180.0;
-        rpy[0] = ab_roll;
+        rpy[2] = -atan2(Pos[0],Pos[1]) / CV_PI*180.0;
+        rpy[1] = atan2(Pos[2],Pos[1]) / CV_PI*180.0;
+        // rpy[1] = 0;
+        rpy[0] = atan2(Pos[0],Pos[1]) / CV_PI*180.0;
+        // rpy[2] = -atan2(Pos[2],Pos[0]) / CV_PI*180.0;
+        // rpy[1] = -(atan2(Pos[1],Pos[0]) / CV_PI*180.0-90);
+        // rpy[0] = ab_pitch;
         return rpy;
     }
 

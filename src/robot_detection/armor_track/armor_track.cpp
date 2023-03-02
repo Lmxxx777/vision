@@ -93,7 +93,7 @@ namespace robot_detection {
         enemy_armor.world_position = AS.pixel2imu(enemy_armor,1);
         KF.setXPost(enemy_armor.world_position);
         // TODO: 这里用的是x和y是水平面的,顺序和数据是否正确
-        Singer.setXpos(enemy_armor.world_position.head(2));
+        Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(2,0)});
         // std::cout<<enemy_armor.camera_position.norm()<<"     "<<enemy_armor.world_position.norm()<<std::endl;
         // std::cout<<"enemy_armor.camera_position:  "<<enemy_armor.camera_position.transpose()<<std::endl;
         // std::cout<<AS.ab_roll<<"     "<<AS.ab_pitch<<"     "<<AS.ab_yaw<<std::endl;
@@ -169,7 +169,7 @@ namespace robot_detection {
                         KF.setPosAndSpeed(armor.world_position, predicted_enemy.tail(3));
                         predicted_enemy = position_speed;
                         matched_armor = armor;
-                        
+
                         same_armor_distance = dis_tmp;
                         // std::cout<<"track_sameID_initial!!"<<std::endl;
                         break;
@@ -299,7 +299,7 @@ namespace robot_detection {
             ////////////////Singer predictor//////////////////////////////
 
             // TODO: 检测状态还给false就会一直进入initial函数，历史代码是这么写的，没问题
-            locate_target = false;
+            // locate_target = false;
             return false;
         }
         else
@@ -364,6 +364,8 @@ namespace robot_detection {
             Eigen::Vector3d rpy = AS.yawPitchSolve(bullet_point);
             pitch = rpy[1];
             yaw   = rpy[2];
+            pitch = atan2(enemy_armor.world_position[2],enemy_armor.world_position[1])/ CV_PI*180.0;
+            yaw   = -atan2(enemy_armor.world_position[0],enemy_armor.world_position[1])/ CV_PI*180.0;
 
             // std::cout<<"------------------------gimbal_angles------------------------"<<std::endl;
             // std::cout<<"delta_pitch: "<< -atan2(bullet_point[1],bullet_point[2])/CV_PI*180  <<std::endl;

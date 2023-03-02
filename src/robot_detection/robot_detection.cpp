@@ -40,7 +40,7 @@ std::vector<robot_detection::Armor> Targets;
 
 robot_detection::ArmorTracker Track;
 
-robot_detection::AngleSolve AS;  // for test
+// robot_detection::AngleSolve AS;  // for test
 
 // 0~pi
 double last_pitch, last_yaw;
@@ -214,6 +214,12 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         break;
     }
 
+
+    cv::putText(src,"p    : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"y    : "+std::to_string(yaw),cv::Point2f(1280 - 200,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"r    : "+std::to_string(roll)+"m",cv::Point2f(1280 - 200,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+
+
     // send_data.pitch = 12;
     // send_data.yaw = 34;
     // std::cout<<send_data.pitch<<"        "<<send_data.yaw<<std::endl;
@@ -222,7 +228,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     vision_pub_.publish(send_data);
     cv::putText(src,"PITCH    : "+std::to_string(send_data.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"YAW      : "+std::to_string(send_data.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"ROLL     : "+std::to_string(Track.AS.ab_roll),cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
     cv::putText(src,"000    : "+std::to_string(Track.predicted_position[0]),cv::Point2f(0,1024-60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"111    : "+std::to_string(Track.predicted_position[1]),cv::Point2f(0,1024-90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
@@ -240,7 +247,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     putText(src, information,Track.enemy_armor.armor_pt4[3],cv::FONT_HERSHEY_SIMPLEX,2,CV_RGB(255, 255, 0),1,3);
 
     // 展示要匹配的预测装甲板
-    cv::Point2f armor_match_center = Track.AS.imu2pixel(Track.predicted_enemy);
+    cv::Point2f armor_match_center = Track.AS.imu2pixel(Track.predicted_enemy.head(3));
+    // cv::circle(src,armor_match_center,5,cv::Scalar(255,0,0),-1);
     cv::RotatedRect armor_match = cv::RotatedRect(armor_match_center,
                                                 cv::Size2f(Track.enemy_armor.size.width,Track.enemy_armor.size.height),
                                                 Track.enemy_armor.angle);
@@ -248,11 +256,12 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::Point2f vertice_armor_match[4];
     Track.enemy_armor.points(vertice_armor_match);
     for (int i = 0; i < 4; ++i) {
-        line(src, vertice_armor_match[i], vertice_armor_match[(i + 1) % 4], CV_RGB(255, 0, 255),2,cv::LINE_8);
+        line(src, vertice_armor_match[i], vertice_armor_match[(i + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
     }
 
     // 用预测位置为中心点，选择的装甲板画框
     cv::Point2f armor_singer_center = Track.AS.imu2pixel(Track.predicted_position);
+    armor_singer_center.y = armor_match_center.y;
     cv::RotatedRect armor_singer = cv::RotatedRect(armor_singer_center,
                                                 cv::Size2f(Track.enemy_armor.size.width,Track.enemy_armor.size.height),
                                                 Track.enemy_armor.angle);
@@ -261,7 +270,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     armor_singer.points(vertice_armor_singer);
     for (int m = 0; m < 4; ++m)
     {
-        line(src, vertice_armor_singer[m], vertice_armor_singer[(m + 1) % 4], CV_RGB(255, 0, 180),2,cv::LINE_8);
+        line(src, vertice_armor_singer[m], vertice_armor_singer[(m + 1) % 4], CV_RGB(255, 255, 0),2,cv::LINE_8);
     } 
 
 

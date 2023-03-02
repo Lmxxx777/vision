@@ -3,7 +3,7 @@
 #define BINARY_SHOW
 // #define DRAW_LIGHTS_CONTOURS
 // #define DRAW_LIGHTS_RRT
-// #define SHOW_NUMROI
+#define SHOW_NUMROI
 // #define ERROR_DETECTION
 // #define DRAW_ARMORS_RRT
 // #define DRAW_FINAL_ARMOR_S_CLASS
@@ -169,7 +169,7 @@ namespace robot_detection {
 
                     // 颜色不符合电控发的就不放入
 
-                    if(light.lightColor == color)
+                    if(light.lightColor == 2)
                     {
                         candidateLights.emplace_back(light);
                     }
