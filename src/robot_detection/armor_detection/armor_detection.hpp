@@ -111,7 +111,6 @@ namespace robot_detection {
         double thresh_confidence;
 
         cv::Mat _src;  // 裁剪src后的ROI
-        cv::Mat showSrc;//for show
         cv::Mat _binary;
         std::vector<cv::Mat> temps;
 

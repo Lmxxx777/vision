@@ -36,7 +36,7 @@ namespace robot_detection {
         // max_delta_t = (int)fs["max_delta_t"];
         // max_delta_dist = (int)fs["max_delta_dist"];
 
-        isChangeSameID = false;
+        // isChangeSameID = false;
         fs.release();
     }
 
@@ -142,19 +142,20 @@ namespace robot_detection {
                     matched_armor = armor;
                 }
             }
-//            std::cout<<"min_position_diff(m):    "<<min_position_diff<<std::endl;
-//            std::cout<<"match_id: "<<matched_armor.id<<std::endl;
+            // std::cout<<"min_position_diff(m):    "<<min_position_diff<<std::endl;
+            // std::cout<<"match_id: "<<matched_armor.id<<std::endl;
             // 这个相同id对遮挡情况似乎不好
             if (min_position_diff < new_old_threshold && matched_armor.id == tracking_id)
             {
-//                std::cout<<"yes"<<std::endl;
+                // std::cout<<"yes"<<std::endl;
                 matched = true;
+                // TODO: 检测值两个点是否有差异
                 Eigen::Vector3d position_vec = AS.pixel2imu(matched_armor,1);
                 predicted_enemy = KF.update(position_vec);
             }
             else
             {
-//                std::cout<<"no"<<std::endl;
+                // std::cout<<"no"<<std::endl;
                 // 本帧内是否有相同ID
                 double same_armor_distance = DBL_MAX;
                 for (auto & armor : find_armors)
@@ -167,12 +168,12 @@ namespace robot_detection {
                         Eigen::VectorXd position_speed(6);
                         position_speed << armor.world_position, predicted_enemy.tail(3);
                         KF.setPosAndSpeed(armor.world_position, predicted_enemy.tail(3));
+
                         predicted_enemy = position_speed;
                         matched_armor = armor;
 
                         same_armor_distance = dis_tmp;
                         // std::cout<<"track_sameID_initial!!"<<std::endl;
-                        break;
                     }
                 }
             }
@@ -203,8 +204,8 @@ namespace robot_detection {
             // std::cout<<"P: \n"<<KF.P<<std::endl;
             enemy_armor = matched_armor;
         }
-//        predicted_position = predicted_enemy.head(3);
-//        predicted_speed = predicted_enemy.tail(3);
+        // predicted_position = predicted_enemy.head(3);
+        // predicted_speed = predicted_enemy.tail(3);
 
         if (tracker_state == DETECTING)
         {
@@ -223,7 +224,6 @@ namespace robot_detection {
                 find_aim_cnt = 0;
                 tracker_state = MISSING;
             }
-
         }
         else if (tracker_state == TRACKING)
         {
@@ -232,7 +232,6 @@ namespace robot_detection {
                 tracker_state = LOSING;
                 lost_aim_cnt++;
             }
-
         }
         else if (tracker_state == LOSING)
         {
@@ -298,13 +297,13 @@ namespace robot_detection {
             }
             ////////////////Singer predictor//////////////////////////////
 
-            // TODO: 检测状态还给false就会一直进入initial函数，历史代码是这么写的，没问题
+            // 检测状态还给false就会一直进入initial函数，历史代码是这么写的，没问题
             // locate_target = false;
             return false;
         }
         else
         {
-            // TODO: reset(); 前一个函数变成MISSING会之间返回false，这个函数里这个判断无效
+            // reset();  // 前一个函数变成MISSING会之间返回false，这个函数里这个判断无效
             // locate_target = false;
             return false;
         }
@@ -364,8 +363,9 @@ namespace robot_detection {
             Eigen::Vector3d rpy = AS.yawPitchSolve(bullet_point);
             pitch = rpy[1];
             yaw   = rpy[2];
-            pitch = atan2(enemy_armor.world_position[2],enemy_armor.world_position[1])/ CV_PI*180.0;
-            yaw   = -atan2(enemy_armor.world_position[0],enemy_armor.world_position[1])/ CV_PI*180.0;
+            // 没有预测的角度计算
+            // pitch = atan2(enemy_armor.world_position[2],enemy_armor.world_position[1])/ CV_PI*180.0;
+            // yaw   = -atan2(enemy_armor.world_position[0],enemy_armor.world_position[1])/ CV_PI*180.0;
 
             // std::cout<<"------------------------gimbal_angles------------------------"<<std::endl;
             // std::cout<<"delta_pitch: "<< -atan2(bullet_point[1],bullet_point[2])/CV_PI*180  <<std::endl;

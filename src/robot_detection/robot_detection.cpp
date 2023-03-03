@@ -214,15 +214,9 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         break;
     }
 
-
     cv::putText(src,"p    : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"y    : "+std::to_string(yaw),cv::Point2f(1280 - 200,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"r    : "+std::to_string(roll)+"m",cv::Point2f(1280 - 200,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-
-
-    // send_data.pitch = 12;
-    // send_data.yaw = 34;
-    // std::cout<<send_data.pitch<<"        "<<send_data.yaw<<std::endl;
 
     // send message
     vision_pub_.publish(send_data);
@@ -231,12 +225,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,"ROLL     : "+std::to_string(Track.AS.ab_roll),cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
-    cv::putText(src,"000    : "+std::to_string(Track.predicted_position[0]),cv::Point2f(0,1024-60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"111    : "+std::to_string(Track.predicted_position[1]),cv::Point2f(0,1024-90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"222    : "+std::to_string(Track.predicted_position[2])+"m",cv::Point2f(0,1024-120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-
-
-
     // 展示选择到的装甲板
     cv::Point2f vertice_enemy[4];
     Track.enemy_armor.points(vertice_enemy);
@@ -244,7 +232,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         line(src, vertice_enemy[i], vertice_enemy[(i + 1) % 4], CV_RGB(255, 0, 255),2,cv::LINE_8);
     }
     std::string information = std::to_string(Track.enemy_armor.id) + ":" + std::to_string(Track.enemy_armor.confidence*100) + "%";
-    putText(src, information,Track.enemy_armor.armor_pt4[3],cv::FONT_HERSHEY_SIMPLEX,2,CV_RGB(255, 255, 0),1,3);
+    putText(src, information,Track.enemy_armor.armor_pt4[3],cv::FONT_HERSHEY_SIMPLEX,2,CV_RGB(255,0,255),1,3);
 
     // 展示要匹配的预测装甲板
     cv::Point2f armor_match_center = Track.AS.imu2pixel(Track.predicted_enemy.head(3));
@@ -260,8 +248,11 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     }
 
     // 用预测位置为中心点，选择的装甲板画框
+    // cv::putText(src,"000    : "+std::to_string(Track.predicted_position[0]),cv::Point2f(0,1024- 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    // cv::putText(src,"111    : "+std::to_string(Track.predicted_position[1]),cv::Point2f(0,1024- 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    // cv::putText(src,"222    : "+std::to_string(Track.predicted_position[2]),cv::Point2f(0,1024-120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::Point2f armor_singer_center = Track.AS.imu2pixel(Track.predicted_position);
-    armor_singer_center.y = armor_match_center.y;
+    // armor_singer_center.y = armor_match_center.y;
     cv::RotatedRect armor_singer = cv::RotatedRect(armor_singer_center,
                                                 cv::Size2f(Track.enemy_armor.size.width,Track.enemy_armor.size.height),
                                                 Track.enemy_armor.angle);
@@ -288,27 +279,27 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
 int main(int argc, char  *argv[])
 {
-setlocale(LC_ALL,"");
-ros::init(argc,argv,"mv_camera_sub");
-ros::NodeHandle nh;
-vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
+    setlocale(LC_ALL,"");
+    ros::init(argc,argv,"mv_camera_sub");
+    ros::NodeHandle nh;
+    vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
 
-image_transport::ImageTransport it(nh);
-// image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")
-// ros::Subscriber camera_imu_sub = nh.subscribe("euler_angles",1,ImuCallback);
-// ros::Subscriber imu_sub = nh.subscribe("imu",1,imuCallback);
+    image_transport::ImageTransport it(nh);
+    // image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")
+    // ros::Subscriber camera_imu_sub = nh.subscribe("euler_angles",1,ImuCallback);
+    // ros::Subscriber imu_sub = nh.subscribe("imu",1,imuCallback);
 
-message_filters::Subscriber<sensor_msgs::Image> camera_src_sub(nh, "image_raw", 1);  
-// // fdilink_ahrs
-// message_filters::Subscriber<robot_msgs::EulerAngles> camera_imu_sub(nh, "euler_angles", 1);  
-// typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::EulerAngles> MySyncPolicy;
-// // c 板
-message_filters::Subscriber<robot_msgs::vision> camera_imu_sub(nh, "vision_data", 1);  
-typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::vision> MySyncPolicy;
-// // // // ExactTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
-message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), camera_src_sub, camera_imu_sub);
-sync.registerCallback(boost::bind(&callback, _1, _2));
+    message_filters::Subscriber<sensor_msgs::Image> camera_src_sub(nh, "image_raw", 1);  
+    // // fdilink_ahrs
+    // message_filters::Subscriber<robot_msgs::EulerAngles> camera_imu_sub(nh, "euler_angles", 1);  
+    // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::EulerAngles> MySyncPolicy;
+    // // c 板
+    message_filters::Subscriber<robot_msgs::vision> camera_imu_sub(nh, "vision_data", 1);  
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::vision> MySyncPolicy;
+    // // // // ExactTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
+    message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), camera_src_sub, camera_imu_sub);
+    sync.registerCallback(boost::bind(&callback, _1, _2));
 
-ros::spin();
-return 0;
+    ros::spin();
+    return 0;
 }

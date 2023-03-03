@@ -1,6 +1,6 @@
 #include "armor_detection.hpp"
 
-#define BINARY_SHOW
+// #define BINARY_SHOW
 // #define DRAW_LIGHTS_CONTOURS
 // #define DRAW_LIGHTS_RRT
 #define SHOW_NUMROI
@@ -62,7 +62,6 @@ namespace robot_detection {
     void ArmorDetector::setImage(const Mat &src)
     {
         src.copyTo(_src);
-        src.copyTo(showSrc);
 
         //二值化
         Mat gray;
@@ -168,8 +167,8 @@ namespace robot_detection {
                     // cout<<"light.lightColor  ==  "<<light.lightColor<<endl;
 
                     // 颜色不符合电控发的就不放入
-
-                    if(light.lightColor == 2)
+                    // 传入的电控颜色是color，文件读取的颜色是enemy_color
+                    if(light.lightColor == enemy_color)
                     {
                         candidateLights.emplace_back(light);
                     }
