@@ -8,6 +8,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CompressedImage.h>
 #include <tf/transform_broadcaster.h>
+#include <geometry_msgs/PointStamped.h>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -15,8 +16,9 @@
 #include <message_filters/sync_policies/approximate_time.h>
 // msg
 #include "robot_msgs/vision.h"
+#include "robot_msgs/vision_pts.h"
 #include "robot_msgs/robot_ctrl.h"
-// #include "robot_msgs/EulerAngles.h"
+#include "robot_msgs/EulerAngles.h"
 //opencv
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -29,7 +31,7 @@
 #include "ceres/ceres.h"
 //c++
 #include <iostream>
-#include "robot_status.h"
+//vision
 #include "armor_track.h"
 
 
@@ -47,11 +49,9 @@ double last_pitch, last_yaw;
 double delta_pitch, delta_yaw;
 double gimbal_pitch, gimbal_yaw, gimbal_roll;
 double offset_x, offset_y, offset_z;
-bool first = false;
-double r,p,y;
-
 
 ros::Publisher vision_pub_;
+ros::Publisher vision_pts_pub_;
 
 // clock_t
 // clock_t image_timestamp_;
@@ -61,69 +61,68 @@ ros::Publisher vision_pub_;
 // ros::Time begin;
 // ros::Time end;
 
-// void ImageCallback(const sensor_msgs::ImageConstPtr& src_msg/*, const sensor_msgs::CameraInfoConstPtr& src_info*/) //, const sensor_msgs::CameraInfo& info
-// {
-//     try
-//     {
-//         cv_bridge::CvImagePtr cv_ptr_compressed = cv_bridge::toCvCopy(src_msg, "bgr8");
-//         src = cv_ptr_compressed->image;
-//         cv::imshow("main-result-image", src);
-//         cv::waitKey(5);
+void ImageCallback(const sensor_msgs::ImageConstPtr& src_msg/*, const sensor_msgs::CameraInfoConstPtr& src_info*/) //, const sensor_msgs::CameraInfo& info
+{
+    try
+    {
+        cv_bridge::CvImagePtr cv_ptr_compressed = cv_bridge::toCvCopy(src_msg, "bgr8");
+        src = cv_ptr_compressed->image;
+        cv::imshow("main-result-image", src);
+        cv::waitKey(5);
 
 
-//         // src = cv_bridge::toCvCopy(src_msg, "bgr8")->image.clone();
-//         // ROS_INFO("show miage's width %d \n", src.cols);
-//         // cv::imshow("main-result-image", src);
-//         // cv::waitKey(5);
-//     }
-//     catch (cv_bridge::Exception& e)
-//     {
-//         ROS_ERROR("Could not convert from '%s' to 'bgr8'.", src_msg->encoding.c_str());
-//     }
+        // src = cv_bridge::toCvCopy(src_msg, "bgr8")->image.clone();
+        // ROS_INFO("show miage's width %d \n", src.cols);
+        // cv::imshow("main-result-image", src);
+        // cv::waitKey(5);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+        ROS_ERROR("Could not convert from '%s' to 'bgr8'.", src_msg->encoding.c_str());
+    }
 
 
-//     // clock_t
-//     // image_timestamp_ = std::clock();
-//     // double delta_t = (double)(image_timestamp_ - image_last_timestamp_) / CLOCKS_PER_SEC;
-//     // ROS_INFO("FPS %lf \n", 1/delta_t);
+    // clock_t
+    // image_timestamp_ = std::clock();
+    // double delta_t = (double)(image_timestamp_ - image_last_timestamp_) / CLOCKS_PER_SEC;
+    // ROS_INFO("FPS %lf \n", 1/delta_t);
 
-//     // Time
-//     // end = ros::Time::now();
-//     // ros::Duration duration = end - begin;
-//     // double delta_tt = duration.toSec();
-//     // ROS_INFO("FPS %lf \n", 1/delta_tt);
+    // Time
+    // end = ros::Time::now();
+    // ros::Duration duration = end - begin;
+    // double delta_tt = duration.toSec();
+    // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
-//     // Targets = Detect.autoAim(src);
-//     // if (!Targets.empty())
-//     // {
-//     //   std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
-//     // }
-//     // else
-//     // {
-//     //   std::cout<<"no target!!!"<<std::endl;
-//     // }
+    // Targets = Detect.autoAim(src);
+    // if (!Targets.empty())
+    // {
+    //   std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
+    // }
+    // else
+    // {
+    //   std::cout<<"no target!!!"<<std::endl;
+    // }
 
-//     // // clock_t
-//     // image_last_timestamp_ = image_timestamp_;
+    // // clock_t
+    // image_last_timestamp_ = image_timestamp_;
 
-//     // Time
-//     // begin = end;
-// }
+    // Time
+    // begin = end;
+}
 
-// void ImuCallback(const robot_msgs::EulerAnglesConstPtr &imu_msg)
-// {
-//     robot_msgs::EulerAngles Euler_angle;
-//     Euler_angle = *imu_msg;
-//     // *imu_msg.unique
-//     gimbal_pitch = Euler_angle.pitch;
-//     gimbal_yaw = Euler_angle.yaw;
-//     gimbal_roll = Euler_angle.roll;
+void ImuCallback(const robot_msgs::EulerAnglesConstPtr &imu_msg)
+{
+    // robot_msgs::EulerAngles Euler_angle;
+    // Euler_angle = *imu_msg;
+    // // *imu_msg.unique
+    // gimbal_pitch = Euler_angle.pitch;
+    // gimbal_yaw = Euler_angle.yaw;
+    // gimbal_roll = Euler_angle.roll;
 
-//     ROS_INFO("gimbal_pitch is  %lf \n", gimbal_pitch);
-//     ROS_INFO("gimbal_yaw   is  %lf \n", gimbal_yaw);
-//     ROS_INFO("gimbal_roll  is  %lf \n", gimbal_roll);
-// }
-
+    // ROS_INFO("gimbal_pitch is  %lf \n", gimbal_pitch);
+    // ROS_INFO("gimbal_yaw   is  %lf \n", gimbal_yaw);
+    // ROS_INFO("gimbal_roll  is  %lf \n", gimbal_roll);
+}
 
 void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visionConstPtr &imu_msg)
 {
@@ -175,29 +174,86 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
     // tracking
-    robot_msgs::robot_ctrl send_data;
+    robot_msgs::robot_ctrl vision_send_data;
+    robot_msgs::vision_pts vision_pts_send_data;
+
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
     bool track_bool = Track.locateEnemy(src,Targets,now_time);
     // track_bool = false;
     if(track_bool)
     {
-        send_data.fire_command = 1;
-        send_data.target_lock = 1;
-        send_data.pitch = Track.pitch;
-        send_data.yaw = Track.yaw;
         // std::cout<<"track!!!"<<Track.tracker_state<<"  id: "<<Track.tracking_id<<std::endl;
+        if(mode)
+        {
+            vision_send_data.fire_command = 1;
+            vision_send_data.target_lock = 1;
+        }
+        else
+        {
+            vision_send_data.fire_command = 0;
+            vision_send_data.target_lock = 0;
+        }
+        vision_send_data.pitch = Track.pitch;
+        vision_send_data.yaw = Track.yaw;
+
+        vision_pts_send_data.pt_aim.header.frame_id = "pt_aim";
+        vision_pts_send_data.pt_aim.header.seq++;
+        vision_pts_send_data.pt_aim.header.stamp = ros::Time::now();
+        vision_pts_send_data.pt_aim.point.x = Track.enemy_armor.world_position[0];
+        vision_pts_send_data.pt_aim.point.y = Track.enemy_armor.world_position[1];
+        vision_pts_send_data.pt_aim.point.z = Track.enemy_armor.world_position[2];
+
+        vision_pts_send_data.pt_aim_pre.header.frame_id = "pt_aim_pre";
+        vision_pts_send_data.pt_aim_pre.header.seq++;
+        vision_pts_send_data.pt_aim_pre.header.stamp = ros::Time::now();
+        vision_pts_send_data.pt_aim_pre.point.x = Track.predicted_enemy.head(3)[0];
+        vision_pts_send_data.pt_aim_pre.point.y = Track.predicted_enemy.head(3)[1];
+        vision_pts_send_data.pt_aim_pre.point.z = Track.predicted_enemy.head(3)[2];
+
+        vision_pts_send_data.pt_aim_singer.header.frame_id = "pt_aim_singer";
+        vision_pts_send_data.pt_aim_singer.header.seq++;
+        vision_pts_send_data.pt_aim_singer.header.stamp = ros::Time::now();
+        vision_pts_send_data.pt_aim_singer.point.x = Track.predicted_position[0];
+        vision_pts_send_data.pt_aim_singer.point.y = Track.predicted_position[1];
+        vision_pts_send_data.pt_aim_singer.point.z = Track.predicted_position[2];  
     }
     else
     {
-        send_data.fire_command = 0;
-        send_data.target_lock = 0;
-        // send_data.pitch = Track.pitch;
-        // send_data.yaw = Track.yaw;
-        send_data.pitch = Track.AS.ab_pitch;
-        send_data.yaw = Track.AS.ab_yaw;
         // std::cout<<"loss!!!"<<std::endl;
+        vision_send_data.fire_command = 0;
+        vision_send_data.target_lock = 0;
+        // vision_send_data.pitch = Track.pitch;
+        // vision_send_data.yaw = Track.yaw;
+        vision_send_data.pitch = Track.AS.ab_pitch;
+        vision_send_data.yaw = Track.AS.ab_yaw;
+        
+        vision_pts_send_data.pt_aim.header.frame_id = "pt_aim";
+        vision_pts_send_data.pt_aim.header.seq++;
+        vision_pts_send_data.pt_aim.header.stamp = ros::Time::now();
+        vision_pts_send_data.pt_aim.point.x = 0;
+        vision_pts_send_data.pt_aim.point.y = 0;
+        vision_pts_send_data.pt_aim.point.z = 0;
+
+        vision_pts_send_data.pt_aim_pre.header.frame_id = "pt_aim_pre";
+        vision_pts_send_data.pt_aim_pre.header.seq++;
+        vision_pts_send_data.pt_aim_pre.header.stamp = ros::Time::now();
+        vision_pts_send_data.pt_aim_pre.point.x = 0;
+        vision_pts_send_data.pt_aim_pre.point.y = 0;
+        vision_pts_send_data.pt_aim_pre.point.z = 0;
+
+        vision_pts_send_data.pt_aim_singer.header.frame_id = "pt_aim_singer";
+        vision_pts_send_data.pt_aim_singer.header.seq++;
+        vision_pts_send_data.pt_aim_singer.header.stamp = ros::Time::now();
+        vision_pts_send_data.pt_aim_singer.point.x = 0;
+        vision_pts_send_data.pt_aim_singer.point.y = 0;
+        vision_pts_send_data.pt_aim_singer.point.z = 0; 
     }
 
+    // send message
+    vision_pub_.publish(vision_send_data);
+    vision_pts_pub_.publish(vision_pts_send_data);
+
+    // show track state on img's ru
     switch (Track.tracker_state)
     {
     case 0: // MISSING
@@ -214,14 +270,14 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         break;
     }
 
-    cv::putText(src,"p    : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"y    : "+std::to_string(yaw),cv::Point2f(1280 - 200,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"r    : "+std::to_string(roll)+"m",cv::Point2f(1280 - 200,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    // show receive data on img's ru
+    cv::putText(src,"p : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"y : "+std::to_string(yaw),cv::Point2f(1280 - 200,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"r : "+std::to_string(roll),cv::Point2f(1280 - 200,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
-    // send message
-    vision_pub_.publish(send_data);
-    cv::putText(src,"PITCH    : "+std::to_string(send_data.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"YAW      : "+std::to_string(send_data.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    // show send data on img's lu
+    cv::putText(src,"PITCH    : "+std::to_string(vision_send_data.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"YAW      : "+std::to_string(vision_send_data.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"ROLL     : "+std::to_string(Track.AS.ab_roll),cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
@@ -283,6 +339,7 @@ int main(int argc, char  *argv[])
     ros::init(argc,argv,"mv_camera_sub");
     ros::NodeHandle nh;
     vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
+    vision_pts_pub_ = nh.advertise<robot_msgs::vision_pts>("vision_pts", 1);
 
     image_transport::ImageTransport it(nh);
     // image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")
