@@ -186,17 +186,18 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // track_bool = false;
     if(track_bool)
     {
+        mode = 1;
         // std::cout<<"track!!!"<<Track.tracker_state<<"  id: "<<Track.tracking_id<<std::endl;
         if(mode)
         {
-            vision_send_data.fire_command = 1;
-            vision_send_data.target_lock = 1;
+            vision_send_data.fire_command = 0x31;
+            vision_send_data.target_lock = 0x31;
             // transform.setOrigin(tf::Vector3(Track.enemy_armor.camera_position[0],Track.enemy_armor.camera_position[1],Track.enemy_armor.camera_position[2]));
         }
         else
         {
-            vision_send_data.fire_command = 0;
-            vision_send_data.target_lock = 0;
+            vision_send_data.fire_command = 0x32;
+            vision_send_data.target_lock = 0x32;
             // transform.setOrigin(tf::Vector3(0,0,0));
         }
         vision_send_data.pitch = Track.pitch;
@@ -205,8 +206,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     else
     {
         // std::cout<<"loss!!!"<<std::endl;
-        vision_send_data.fire_command = 0;
-        vision_send_data.target_lock = 0;
+        vision_send_data.fire_command = 0x32;
+        vision_send_data.target_lock = 0x32;
         // vision_send_data.pitch = Track.pitch;
         // vision_send_data.yaw = Track.yaw;
         // transform.setOrigin(tf::Vector3(0,0,0));
