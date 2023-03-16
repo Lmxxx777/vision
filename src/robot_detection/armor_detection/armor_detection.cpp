@@ -6,7 +6,7 @@
 #define SHOW_NUMROI
 // #define ERROR_DETECTION
 // #define DRAW_ARMORS_RRT
-// #define DRAW_FINAL_ARMOR_S_CLASS
+#define DRAW_FINAL_ARMOR_S_CLASS
 
 using namespace cv;
 using namespace std;
@@ -454,7 +454,7 @@ namespace robot_detection {
             threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
             string name = to_string(armor.id) + ":" + to_string(armor.confidence*100) + "%";
             imshow("name", numDst);
-            std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+            // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
         }
 #endif
     }

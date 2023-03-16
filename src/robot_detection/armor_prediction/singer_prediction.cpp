@@ -4,18 +4,17 @@ namespace robot_detection{
 
     Skalman::Skalman()
     {
-
         cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
         shoot_delay = (float)fs["shoot_delay"];
         fs.release();
-        
+
         //init H
         H << 1,0,0,0,0,0,
             0,0,0,1,0,0;
 
         //init R
-        R << 0.00005, 0,
-            0, 0.00005;
+        R << 5e-4, 0,
+            0, 5e-4;
 
         //init Xk_1
         Xk_1 << 0,0.1,0,
@@ -256,7 +255,6 @@ namespace robot_detection{
         predicted_position = predicted_xyz;
         
         if (!finite(predicted_position.norm()) || predicted_position.norm() - imu_position.norm() > 2){
-            std::cout<<"singer prediction false!!!"<<std::endl;
             predicted_position = imu_position;
             return false;
         }

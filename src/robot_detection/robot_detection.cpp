@@ -7,6 +7,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CompressedImage.h>
+
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PointStamped.h>
 
@@ -16,7 +17,6 @@
 #include <message_filters/sync_policies/approximate_time.h>
 // msg
 #include "robot_msgs/vision.h"
-#include "robot_msgs/vision_pts.h"
 #include "robot_msgs/robot_ctrl.h"
 #include "robot_msgs/EulerAngles.h"
 //opencv
@@ -28,7 +28,7 @@
 //matplotlib
 // #include "matplotlib.h"
 //ceres
-#include "ceres/ceres.h"
+// #include "ceres/ceres.h"
 //c++
 #include <iostream>
 //vision
@@ -51,7 +51,7 @@ double gimbal_pitch, gimbal_yaw, gimbal_roll;
 double offset_x, offset_y, offset_z;
 
 ros::Publisher vision_pub_;
-ros::Publisher vision_pts_pub_;
+ros::Publisher aim_point_pub_;
 
 // clock_t
 // clock_t image_timestamp_;
@@ -130,6 +130,9 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // Time for fps
     ros::Time begin = ros::Time::now();
 
+    // 创建tf的广播器
+    static tf::TransformBroadcaster br;
+
     // begin for predict
     double now_time = (double)cv::getTickCount();
     // robot_detection::chrono_time t;
@@ -160,7 +163,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("mode         is  %x  \n", mode);
     Track.AS.quaternionToRotationMatrix(quaternion);
 
-
     // detecting
     Targets = Detect.autoAim(src, enemy_color);
     if (!Targets.empty())
@@ -174,9 +176,11 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
     // tracking
+    // port & tf
     robot_msgs::robot_ctrl vision_send_data;
-    robot_msgs::vision_pts vision_pts_send_data;
-
+    geometry_msgs::PointStamped aim_point;
+    tf::Transform transform;
+    
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
     bool track_bool = Track.locateEnemy(src,Targets,now_time);
     // track_bool = false;
@@ -187,35 +191,16 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         {
             vision_send_data.fire_command = 1;
             vision_send_data.target_lock = 1;
+            // transform.setOrigin(tf::Vector3(Track.enemy_armor.camera_position[0],Track.enemy_armor.camera_position[1],Track.enemy_armor.camera_position[2]));
         }
         else
         {
             vision_send_data.fire_command = 0;
             vision_send_data.target_lock = 0;
+            // transform.setOrigin(tf::Vector3(0,0,0));
         }
         vision_send_data.pitch = Track.pitch;
         vision_send_data.yaw = Track.yaw;
-
-        vision_pts_send_data.pt_aim.header.frame_id = "pt_aim";
-        vision_pts_send_data.pt_aim.header.seq++;
-        vision_pts_send_data.pt_aim.header.stamp = ros::Time::now();
-        vision_pts_send_data.pt_aim.point.x = Track.enemy_armor.world_position[0];
-        vision_pts_send_data.pt_aim.point.y = Track.enemy_armor.world_position[1];
-        vision_pts_send_data.pt_aim.point.z = Track.enemy_armor.world_position[2];
-
-        vision_pts_send_data.pt_aim_pre.header.frame_id = "pt_aim_pre";
-        vision_pts_send_data.pt_aim_pre.header.seq++;
-        vision_pts_send_data.pt_aim_pre.header.stamp = ros::Time::now();
-        vision_pts_send_data.pt_aim_pre.point.x = Track.predicted_enemy.head(3)[0];
-        vision_pts_send_data.pt_aim_pre.point.y = Track.predicted_enemy.head(3)[1];
-        vision_pts_send_data.pt_aim_pre.point.z = Track.predicted_enemy.head(3)[2];
-
-        vision_pts_send_data.pt_aim_singer.header.frame_id = "pt_aim_singer";
-        vision_pts_send_data.pt_aim_singer.header.seq++;
-        vision_pts_send_data.pt_aim_singer.header.stamp = ros::Time::now();
-        vision_pts_send_data.pt_aim_singer.point.x = Track.predicted_position[0];
-        vision_pts_send_data.pt_aim_singer.point.y = Track.predicted_position[1];
-        vision_pts_send_data.pt_aim_singer.point.z = Track.predicted_position[2];  
     }
     else
     {
@@ -224,40 +209,33 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_send_data.target_lock = 0;
         // vision_send_data.pitch = Track.pitch;
         // vision_send_data.yaw = Track.yaw;
+        // transform.setOrigin(tf::Vector3(0,0,0));
         vision_send_data.pitch = Track.AS.ab_pitch;
         vision_send_data.yaw = Track.AS.ab_yaw;
-        
-        vision_pts_send_data.pt_aim.header.frame_id = "pt_aim";
-        vision_pts_send_data.pt_aim.header.seq++;
-        vision_pts_send_data.pt_aim.header.stamp = ros::Time::now();
-        vision_pts_send_data.pt_aim.point.x = 0;
-        vision_pts_send_data.pt_aim.point.y = 0;
-        vision_pts_send_data.pt_aim.point.z = 0;
-
-        vision_pts_send_data.pt_aim_pre.header.frame_id = "pt_aim_pre";
-        vision_pts_send_data.pt_aim_pre.header.seq++;
-        vision_pts_send_data.pt_aim_pre.header.stamp = ros::Time::now();
-        vision_pts_send_data.pt_aim_pre.point.x = 0;
-        vision_pts_send_data.pt_aim_pre.point.y = 0;
-        vision_pts_send_data.pt_aim_pre.point.z = 0;
-
-        vision_pts_send_data.pt_aim_singer.header.frame_id = "pt_aim_singer";
-        vision_pts_send_data.pt_aim_singer.header.seq++;
-        vision_pts_send_data.pt_aim_singer.header.stamp = ros::Time::now();
-        vision_pts_send_data.pt_aim_singer.point.x = 0;
-        vision_pts_send_data.pt_aim_singer.point.y = 0;
-        vision_pts_send_data.pt_aim_singer.point.z = 0; 
     }
 
-    // send message
+    // send port gimbal message
     vision_pub_.publish(vision_send_data);
-    vision_pts_pub_.publish(vision_pts_send_data);
+    // tf_broadcast
+    transform.setOrigin(tf::Vector3(0,10,-5));
+    tf::Quaternion q;
+    q.setRPY(M_PI/2, 0, 0);
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform,ros::Time::now(),"gimbal","camera"));
+    // send aim point in camera
+    aim_point.header.frame_id = "camera";
+    aim_point.header.seq++;
+    aim_point.header.stamp = ros::Time::now();
+    aim_point.point.x = Track.enemy_armor.camera_position[0];
+    aim_point.point.y = Track.enemy_armor.camera_position[1];
+    aim_point.point.z = Track.enemy_armor.camera_position[2];
+    aim_point_pub_.publish(aim_point);
 
     // show track state on img's ru
     switch (Track.tracker_state)
     {
     case 0: // MISSING
-        cv::putText(src,"MISSING   ",cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        cv::putText(src,"MISSING   ", cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
         break;
     case 1: // DETECTING
         cv::putText(src,"DETECTING " + std::to_string(Track.tracking_id),cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
@@ -303,10 +281,11 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         line(src, vertice_armor_match[i], vertice_armor_match[(i + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
     }
 
+    cv::putText(src,"000  : "+std::to_string(Track.enemy_armor.camera_position[0]),cv::Point2f(0,1024- 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"111  : "+std::to_string(Track.enemy_armor.camera_position[1]),cv::Point2f(0,1024- 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"222  : "+std::to_string(Track.enemy_armor.camera_position[2]),cv::Point2f(0,1024-120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    
     // 用预测位置为中心点，选择的装甲板画框
-    // cv::putText(src,"000    : "+std::to_string(Track.predicted_position[0]),cv::Point2f(0,1024- 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    // cv::putText(src,"111    : "+std::to_string(Track.predicted_position[1]),cv::Point2f(0,1024- 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    // cv::putText(src,"222    : "+std::to_string(Track.predicted_position[2]),cv::Point2f(0,1024-120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::Point2f armor_singer_center = Track.AS.imu2pixel(Track.predicted_position);
     // armor_singer_center.y = armor_match_center.y;
     cv::RotatedRect armor_singer = cv::RotatedRect(armor_singer_center,
@@ -326,7 +305,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     ros::Duration duration_t = end - begin;
     double delta_tt = duration_t.toSec();
     cv::putText(src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    ROS_INFO("FPS %lf \n", 1/delta_tt);
+    // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
     // show image
     cv::imshow("main-result-image", src);
@@ -336,10 +315,11 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
+
     ros::init(argc,argv,"mv_camera_sub");
     ros::NodeHandle nh;
     vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
-    vision_pts_pub_ = nh.advertise<robot_msgs::vision_pts>("vision_pts", 1);
+    aim_point_pub_ = nh.advertise<geometry_msgs::PointStamped>("aim_point", 1);
 
     image_transport::ImageTransport it(nh);
     // image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")
