@@ -280,7 +280,7 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
-                return false;
+                // return false;
             }
             ////////////////Singer predictor//////////////////////////////
             return true;
@@ -293,7 +293,7 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
-                return false;
+                // return false;
             }
             ////////////////Singer predictor//////////////////////////////
 

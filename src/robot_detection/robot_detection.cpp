@@ -130,9 +130,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // Time for fps
     ros::Time begin = ros::Time::now();
 
-    // 创建tf的广播器
-    static tf::TransformBroadcaster br;
-
     // begin for predict
     double now_time = (double)cv::getTickCount();
     // robot_detection::chrono_time t;
@@ -176,10 +173,9 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
     // tracking
-    // port & tf
+    // port & aim_point
     robot_msgs::robot_ctrl vision_send_data;
     geometry_msgs::PointStamped aim_point;
-    tf::Transform transform;
     
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
     bool track_bool = Track.locateEnemy(src,Targets,now_time);
@@ -217,12 +213,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     // send port gimbal message
     vision_pub_.publish(vision_send_data);
-    // tf_broadcast
-    transform.setOrigin(tf::Vector3(0,10,-5));
-    tf::Quaternion q;
-    q.setRPY(M_PI/2, 0, 0);
-    transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform,ros::Time::now(),"gimbal","camera"));
+    
     // send aim point in camera
     aim_point.header.frame_id = "camera";
     aim_point.header.seq++;
