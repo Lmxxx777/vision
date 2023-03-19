@@ -36,7 +36,6 @@ namespace robot_detection {
         robot_state() = default;
 
         void clone(robot_state &robot);
-
         void updateData(float data[4], float quat[4]);
         void updateDataColor(float data[4], float quat[4], int color);
     };

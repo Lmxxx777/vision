@@ -10,7 +10,7 @@ namespace robot_detection{
 
     AngleSolve::AngleSolve()
     {
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
 
         fs["big_w"] >> big_w;
         fs["big_h"] >> big_h;
@@ -27,8 +27,11 @@ namespace robot_detection{
         fs[self_type]["RotationMatrix_cam2imu"] >> temp;
         cv::cv2eigen(temp,RotationMatrix_cam2imu);
         
-        fs[self_type]["CenterOffset_cam2imu"] >> temp;
-        cv::cv2eigen(temp,CenterOffset_cam2imu);
+        fs[self_type]["center_offset_position"] >> temp;
+        cv::cv2eigen(temp,center_offset_position);
+
+        fs[self_type]["gimbal_offset_angle"] >> temp;
+        cv::cv2eigen(temp,gimbal_offset_angle);
 
         fs.release();
         fly_time = 0;
@@ -132,7 +135,7 @@ namespace robot_detection{
         // std::cout<<"cam_pos: "<<cam_pos.transpose()<<std::endl;
 
         Vector3d imu_pos;
-        imu_pos += CenterOffset_cam2imu;
+        imu_pos += center_offset_position;
         imu_pos = RotationMatrix_imu * pos_tmp;
         // 加上两个坐标系的中心点的偏移量，先旋转后平移
 
@@ -144,7 +147,7 @@ namespace robot_detection{
     {
         Vector3d tmp_pos;
         tmp_pos = RotationMatrix_imu.inverse() * imu_pos;
-        tmp_pos -= CenterOffset_cam2imu;
+        tmp_pos -= center_offset_position;
 
         Vector3d cam_pos;
         // cam_pos = RotationMatrix_cam2imu.inverse() * tmp_pos;
@@ -321,6 +324,11 @@ namespace robot_detection{
         Vector3d world_dropPosition;
         world_dropPosition = airResistanceSolve(predicted_position);//calculate gravity and air resistance
         Eigen::Vector3d rpy = yawPitchSolve(world_dropPosition);//get need yaw and pitch
+
+        rpy[0] += gimbal_offset_angle[0];
+        rpy[1] += gimbal_offset_angle[1];
+        rpy[2] += gimbal_offset_angle[2];
+
         return rpy;
     }
 }

@@ -12,7 +12,7 @@ namespace robot_detection {
 
     ArmorTracker::ArmorTracker() {
 
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/track_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/track_data.yaml", cv::FileStorage::READ);
 
         KF.initial_KF();
 
@@ -349,18 +349,18 @@ namespace robot_detection {
                 return false;
             }
 
-            // TODO: 封装一个计算角度的函数
+            
+#ifdef DRAW_BULLET_POINT
             bullet_point = AS.airResistanceSolve(predicted_position);
 
             cv::Point2f bullet_drop = AS.imu2pixel(bullet_point);
-#ifdef DRAW_BULLET_POINT
             cv::Mat bullet = _src.clone();
             cv::circle(bullet,bullet_drop,enemy_armor.size.width/15.0,cv::Scalar(127,255,0),-1);
             cv::circle(bullet,enemy_armor.center,5,cv::Scalar(255,0,0),-1);
             cv::imshow("DRAW_BULLET_POINT",bullet);
 #endif
 
-            Eigen::Vector3d rpy = AS.yawPitchSolve(bullet_point);
+            Eigen::Vector3d rpy = AS.getAngle(bullet_point);
             pitch = rpy[1];
             yaw   = rpy[2];
             // 没有预测的角度计算

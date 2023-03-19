@@ -240,6 +240,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         break;
     }
 
+
     // show receive data on img's ru
     cv::putText(src,"p : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"y : "+std::to_string(yaw),cv::Point2f(1280 - 200,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);

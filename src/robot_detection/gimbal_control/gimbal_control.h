@@ -28,7 +28,8 @@ namespace robot_detection{
         std::string self_type;
 
         Eigen::Matrix<double,3,3> RotationMatrix_cam2imu;
-        Eigen::Vector3d CenterOffset_cam2imu;
+        Eigen::Vector3d center_offset_position;
+        Eigen::Vector3d gimbal_offset_angle;
         Eigen::Matrix<double,3,3> RotationMatrix_imu;
 
         cv::Mat F_MAT;

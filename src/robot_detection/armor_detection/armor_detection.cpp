@@ -17,7 +17,7 @@ namespace robot_detection {
     {
         cnt=0;
 
-        FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
+        FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70
@@ -391,7 +391,6 @@ namespace robot_detection {
             string info_grade = "grade: "+to_string(finalArmors[i].grade);
             putText(final_armors_src,info_grade,finalArmors[i].armor_pt4[0],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
         }
-
         if(finalArmors.size() != 0)
             imshow("DRAW_FINAL_ARMOR_S_CLASS", final_armors_src);
 #endif //DRAW_FINAL_ARMOR_S_CLASS
@@ -403,7 +402,7 @@ namespace robot_detection {
         finalArmors.clear();
         candidateArmors.clear();
         candidateLights.clear();
-
+        
         //do autoaim task
         setImage(src);
         findLights(color);

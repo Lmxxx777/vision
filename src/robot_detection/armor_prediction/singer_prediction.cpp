@@ -4,7 +4,7 @@ namespace robot_detection{
 
     Skalman::Skalman()
     {
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
         shoot_delay = (float)fs["shoot_delay"];
         fs.release();
 
