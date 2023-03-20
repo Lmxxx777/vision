@@ -72,7 +72,7 @@ namespace robot_detection {
 #endif //BINARY_SHOW
     }
 
-    bool ArmorDetector::isLight(Light& light, vector<Point> &cnt)
+    bool ArmorDetector::isLight(Light& light, vector<Point2f> &cnt)
     {
         double height = light.height;
         double width = light.width;
@@ -111,7 +111,7 @@ namespace robot_detection {
 
     void ArmorDetector::findLights(int color)
     {
-        vector<vector<cv::Point>> contours;
+        vector<vector<cv::Point2f>> contours;
         vector<cv::Vec4i> hierarchy;
         cv::findContours(_binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
@@ -139,7 +139,7 @@ namespace robot_detection {
             if (isLight(light, contour) && contour_area < light_area_max)
             {
                 //cout<<"is_Light   "<<endl;
-                cv::Rect rect = r_rect.boundingRect();
+                cv::Rect2f rect = r_rect.boundingRect();
 
                 if (0 <= rect.x && 0 <= rect.width  && rect.x + rect.width  <= _src.cols &&
                     0 <= rect.y && 0 <= rect.height && rect.y + rect.height <= _src.rows)
@@ -257,7 +257,10 @@ namespace robot_detection {
                         Armor armor(armor_rrect);
 
                         for(int index = 0; index < 4; index++)
-                            armor.armor_pt4[index] = pt4[index];
+                        {
+                            // armor.armor_pt4[index] = pt4[index];
+                            armor.armor_pt4.push_back(pt4[index]);
+                        }
 
                         if(small_wh_ratio_ok)
                             armor.type = SMALL;
@@ -433,16 +436,24 @@ namespace robot_detection {
         const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
 
         cv::Point2f target_vertices[4] = {
-                cv::Point(0, bottom_light_y),
-                cv::Point(warp_width, bottom_light_y),
-                cv::Point(warp_width, top_light_y),
-                cv::Point(0, top_light_y),
+            cv::Point2f(0, bottom_light_y),
+            cv::Point2f(warp_width, bottom_light_y),
+            cv::Point2f(warp_width, top_light_y),
+            cv::Point2f(0, top_light_y),
         };
-        Mat rotation_matrix = cv::getPerspectiveTransform(armor.armor_pt4, target_vertices);
+
+        cv::Point2f src_vertices[4] = {
+            armor.armor_pt4[0],
+            armor.armor_pt4[1],
+            armor.armor_pt4[2],
+            armor.armor_pt4[3],
+        };
+
+        Mat rotation_matrix = cv::getPerspectiveTransform(src_vertices, target_vertices);
         cv::warpPerspective(numSrc, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
 
         // Get ROI
-        numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
+        numDst = numDst(cv::Rect2f(cv::Point2f((warp_width - roi_size.width) / 2, 0), roi_size));
 
         dnn_detect(numDst, armor);
 #ifdef SHOW_NUMROI
@@ -460,7 +471,7 @@ namespace robot_detection {
 
     bool ArmorDetector::conTain(RotatedRect &match_rect,vector<Light> &Lights, size_t &i, size_t &j)
     {
-        Rect matchRoi = match_rect.boundingRect();
+        Rect2f matchRoi = match_rect.boundingRect();
         for (size_t k=i+1;k<j;k++)
         {
             Point2f lightPs[4];

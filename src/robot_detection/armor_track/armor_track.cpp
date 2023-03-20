@@ -58,20 +58,6 @@ namespace robot_detection {
         lost_aim_cnt = 0;
     }
 
-    // count IoU
-    double ArmorTracker::countArmorIoU(Armor armor1, Armor armor2)
-    {
-        double area1 = armor1.size.area();
-        double area2 = armor2.size.area();
-
-        std::vector<cv::Point2f> cross_points;
-        cv::rotatedRectangleIntersection(armor1, armor2, cross_points);
-
-        double area3 = cv::contourArea(cross_points);
-
-        return (area3) / (area1 + area2 - area3);
-    }
-
     // 初始化，选择最优装甲板，设置卡尔曼的F和x_1，当没有目标时返回false，选一个最优目标返回true
     bool ArmorTracker::initial(std::vector<Armor> find_armors)
     {

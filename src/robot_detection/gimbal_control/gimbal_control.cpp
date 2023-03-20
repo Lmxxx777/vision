@@ -12,10 +12,19 @@ namespace robot_detection{
     {
         cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
 
-        fs["big_w"] >> big_w;
-        fs["big_h"] >> big_h;
-        fs["small_w"] >> small_w;
-        fs["small_h"] >> small_h;
+        big_w = (double)fs["big_w"];
+        big_h = (double)fs["big_h"];
+        small_w = (double)fs["small_w"];
+        small_h = (double)fs["small_h"];
+        buff_r_w = (double)fs["buff_r_w"];
+        buff_r_h = (double)fs["buff_r_h"];
+        buff_in_w = (double)fs["buff_in_w"];
+        buff_in_h = (double)fs["buff_in_h"];
+        buff_out_w = (double)fs["buff_out_w"];
+        buff_out_h = (double)fs["buff_out_h"];
+        buff_radius = (double)fs["buff_radius"];
+        buff_convex = (double)fs["buff_convex"];
+
         fs["self_type"] >> self_type;
 
         fs[self_type]["F_MAT"] >> F_MAT;
@@ -35,78 +44,6 @@ namespace robot_detection{
 
         fs.release();
         fly_time = 0;
-    }
-
-    // zyx
-    Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix(Eigen::Vector3d &theta)
-    {
-        Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
-        R_x <<
-            1,              0,               0,
-                0,  cos(theta[0]),  -sin(theta[0]),
-                0,  sin(theta[0]),   cos(theta[0]);
-
-        Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
-        R_y <<
-            cos(theta[1]),   0, sin(theta[1]),
-                0,   1,             0,
-                -sin(theta[1]),  0, cos(theta[1]);
-
-        Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
-        R_z <<
-            cos(theta[2]), -sin(theta[2]), 0,
-                sin(theta[2]),  cos(theta[2]), 0,
-                0,              0,             1;
-        Eigen::Matrix3d R = R_z * R_y * R_x;
-        return R;
-    }
-
-    // xyz,固定相机和IMU两个坐标系的转换
-    Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
-    {
-        Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
-        R_x <<
-            1,              0,               0,
-                0,  cos(theta[0]),  -sin(theta[0]),
-                0,  sin(theta[0]),   cos(theta[0]);
-
-        Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
-        R_y <<
-            cos(theta[1]),   0, sin(theta[1]),
-                0,   1,             0,
-                -sin(theta[1]),  0, cos(theta[1]);
-
-        Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
-        R_z <<
-            cos(theta[2]), -sin(theta[2]), 0,
-                sin(theta[2]),  cos(theta[2]), 0,
-                0,              0,             1;
-        Eigen::Matrix3d R = R_x * R_y * R_z;
-        return R;
-    }
-
-    Eigen::Matrix3d AngleSolve::quaternionToRotationMatrix(float quaternion[4])
-    {
-        Eigen::Matrix3d R_x;
-        float w=quaternion[0],x=quaternion[1],y=quaternion[2],z=quaternion[3];
-        R_x << 1-2*y*y-2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w,
-            2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w,
-            2*x*z-2*y*w, 2*y*z+2*w*x, 1-2*x*x-2*y*y;
-
-        float roll = atan2(2*y*z + 2*w*x,1 - 2*x*x - 2*y*y)/CV_PI * 180.0f;
-        float pitch = asin(2*w*y - 2*x*z)/CV_PI*180.0f;
-        float yaw = atan2(2*x*y + 2*w*z, 1 - 2*y*y - 2*z*z)/CV_PI*180.0f;
-
-        // std::cout<<"----------[quaternion_euler]-----------"<<std::endl;
-        // std::cout<<"[roll:]   |"<<roll<<std::endl;
-        // std::cout<<"[pitch:]  |"<<pitch<<std::endl;
-        // std::cout<<"[yaw:]    |"<<yaw<<std::endl;
-        // std::cout<<"----------[get_from_euler]-----------"<<std::endl;
-        // std::cout<<"[get_roll:]     |"<<ab_roll<<std::endl;
-        // std::cout<<"[get_pitch:]    |"<<ab_pitch<<std::endl;
-        // std::cout<<"[get_yaw:]      |"<<ab_yaw<<std::endl;
-
-        return R_x;
     }
 
     void AngleSolve::init(float r, float p, float y, float quat[4], float speed)
@@ -174,18 +111,32 @@ namespace robot_detection{
         return pixel_pos;
     }
 
-    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor, int method)
+    // for armor
+    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor, int type)
     {
-        armor.camera_position = pixel2cam(armor,1);
+        armor.camera_position = pixel2cam(armor,type);
         Eigen::Vector3d imu_pos = cam2imu(armor.camera_position);
         return imu_pos;
     }
-
-    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor, int method)
+    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor, int type)
     {
-        armor.camera_position = pnpSolve(armor.armor_pt4,armor.type,method);
+        armor.camera_position = pnpSolve(armor.armor_pt4,type);
         return armor.camera_position;
     }
+
+    // for buff
+    Eigen::Vector3d AngleSolve::pixel2cam(std::vector<cv::Point2f> points, int type)
+    {
+        Eigen::Vector3d cam_pos = pnpSolve(points,type);
+        return cam_pos;
+    }
+    Eigen::Vector3d AngleSolve::pixel2imu(std::vector<cv::Point2f> points, int type)
+    {
+        Eigen::Vector3d cam_pos = pixel2cam(points,type);
+        Eigen::Vector3d imu_pos = cam2imu(cam_pos);
+        return imu_pos;
+    }
+    
 
     float AngleSolve::BulletModel(float x, float v, float angle) { //x:m,v:m/s,angle:rad
         float t,y;
@@ -223,37 +174,72 @@ namespace robot_detection{
        return Vector3d(Pos[0],Pos[1],y_temp);  // imu
     }
 
-    Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type, int method = SOLVEPNP_IPPE)
+    Eigen::Vector3d AngleSolve::pnpSolve(std::vector<cv::Point2f> pu, int type)
     {
-        double w = type == SMALL ? small_w : big_w;
-        double h = type == SMALL ? small_h : big_h;
-        cv::Point2f lu, ld, ru, rd;
-        std::vector<cv::Point3d> ps = {
-                {-w / 2 , -h / 2, 0.},
-                { w / 2 , -h / 2, 0.},
-                { w / 2 ,  h / 2, 0.},
-                {-w / 2 ,  h / 2, 0.}
-        };
+        std::vector<cv::Point3d> ps;
 
-        std::vector<cv::Point2f> pu;
-        pu.clear();
-        pu.push_back(p[3]);
-        pu.push_back(p[2]);
-        pu.push_back(p[1]);
-        pu.push_back(p[0]);
+        if(type == SMALL)
+        {
+            double w = small_w;
+            double h = small_h;
+            std::vector<cv::Point3d> ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+        }
+        else if(type == BIG)
+        {
+            double w = big_w;
+            double h = big_h;
+            std::vector<cv::Point3d> ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+        }
+        else if(type == BUFF_R)
+        {
+            double w = buff_r_w;
+            double h = buff_r_h;
+            std::vector<cv::Point3d> ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+        }
+        else if(type == BUFF_NO)
+        {
+            std::vector<cv::Point3d> ps = {
+                    {-buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_in_w / 2 ,  buff_in_h , 0.},
+                    {-buff_in_w / 2 ,  buff_in_h , 0.},
+                    {0 , buff_radius, -buff_convex},
+            };
+        }
+        else if(type == BUFF_YES)
+        {
+            double w = small_w;
+            double h = small_h;
+            std::vector<cv::Point3d> ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+        }
 
+        // begin solve
         cv::Mat rvec;
         cv::Mat tvec;
         Eigen::Vector3d tv;
 
-        cv::solvePnP(ps, pu, F_MAT, C_MAT, rvec, tvec/*, SOLVEPNP_IPPE*/);
+        cv::solvePnP(ps, pu, F_MAT, C_MAT, rvec, tvec);
         cv::cv2eigen(tvec, tv);
-
-//    Mat R;
-//    Rodrigues(rvec,R);        std::cout<<"[Pos1:]  |"<<Pos[2]<<std::endl;
-//
-//    // offset++
-        // std::cout<<"distance:   "<<tv.norm()<<std::endl;
 
 #ifdef SHOW_MEASURE_RRECT
         Mat pnp_check = _src.clone();
@@ -331,4 +317,162 @@ namespace robot_detection{
 
         return rpy;
     }
+
+        // zyx
+    Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix(Eigen::Vector3d &theta)
+    {
+        Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
+        R_x <<
+            1,              0,               0,
+                0,  cos(theta[0]),  -sin(theta[0]),
+                0,  sin(theta[0]),   cos(theta[0]);
+
+        Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
+        R_y <<
+            cos(theta[1]),   0, sin(theta[1]),
+                0,   1,             0,
+                -sin(theta[1]),  0, cos(theta[1]);
+
+        Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
+        R_z <<
+            cos(theta[2]), -sin(theta[2]), 0,
+                sin(theta[2]),  cos(theta[2]), 0,
+                0,              0,             1;
+        Eigen::Matrix3d R = R_z * R_y * R_x;
+        return R;
+    }
+
+    // xyz,固定相机和IMU两个坐标系的转换
+    Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
+    {
+        Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
+        R_x <<
+            1,              0,               0,
+                0,  cos(theta[0]),  -sin(theta[0]),
+                0,  sin(theta[0]),   cos(theta[0]);
+
+        Eigen::Matrix3d R_y;    // 计算旋转矩阵的Y分量
+        R_y <<
+            cos(theta[1]),   0, sin(theta[1]),
+                0,   1,             0,
+                -sin(theta[1]),  0, cos(theta[1]);
+
+        Eigen::Matrix3d R_z;    // 计算旋转矩阵的Z分量
+        R_z <<
+            cos(theta[2]), -sin(theta[2]), 0,
+                sin(theta[2]),  cos(theta[2]), 0,
+                0,              0,             1;
+        Eigen::Matrix3d R = R_x * R_y * R_z;
+        return R;
+    }
+
+    Eigen::Matrix3d AngleSolve::quaternionToRotationMatrix(float quaternion[4])
+    {
+        Eigen::Matrix3d R_x;
+        float w=quaternion[0],x=quaternion[1],y=quaternion[2],z=quaternion[3];
+        R_x << 1-2*y*y-2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w,
+            2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w,
+            2*x*z-2*y*w, 2*y*z+2*w*x, 1-2*x*x-2*y*y;
+
+        float roll = atan2(2*y*z + 2*w*x,1 - 2*x*x - 2*y*y)/CV_PI * 180.0f;
+        float pitch = asin(2*w*y - 2*x*z)/CV_PI*180.0f;
+        float yaw = atan2(2*x*y + 2*w*z, 1 - 2*y*y - 2*z*z)/CV_PI*180.0f;
+
+        // std::cout<<"----------[quaternion_euler]-----------"<<std::endl;
+        // std::cout<<"[roll:]   |"<<roll<<std::endl;
+        // std::cout<<"[pitch:]  |"<<pitch<<std::endl;
+        // std::cout<<"[yaw:]    |"<<yaw<<std::endl;
+        // std::cout<<"----------[get_from_euler]-----------"<<std::endl;
+        // std::cout<<"[get_roll:]     |"<<ab_roll<<std::endl;
+        // std::cout<<"[get_pitch:]    |"<<ab_pitch<<std::endl;
+        // std::cout<<"[get_yaw:]      |"<<ab_yaw<<std::endl;
+
+        return R_x;
+    }
+
+    bool AngleSolve::pointsInLine(cv::Point2f p1, cv::Point2f p2, cv::Point2f p3, double error, int type)
+    {
+        if(type)
+        {
+            // 斜率
+            if(fabs((p3.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p3.x - p1.x)) <= error)
+                return true;
+            else
+                return false;
+        }
+        else
+        {
+            // 夹角
+            if(fabs(atan2(p2.y - p1.y, p2.x - p1.x)/CV_PI*180.0 - atan2(p3.y - p1.y, p3.x - p1.x)/CV_PI*180.0) <= error)
+                return true;
+            else
+                return false;   
+        }
+    }
+
+    bool AngleSolve::circleLeastFit(const std::vector<cv::Point2f> &points, double &center_x, double &center_y, double &radius)
+    {
+        center_x = 0.0f;
+        center_y = 0.0f;
+        radius = 0.0f;
+        if (points.size() < 3)
+        {
+            return false;
+        }
+
+        double sum_x = 0.0f, sum_y = 0.0f;
+        double sum_x2 = 0.0f, sum_y2 = 0.0f;
+        double sum_x3 = 0.0f, sum_y3 = 0.0f;
+        double sum_xy = 0.0f, sum_x1y2 = 0.0f, sum_x2y1 = 0.0f;
+
+        int N = points.size();
+        for (int i = 0; i < N; i++)
+        {
+            double x = points[i].x;
+            double y = points[i].y;
+            double x2 = x * x;
+            double y2 = y * y;
+            sum_x += x;
+            sum_y += y;
+            sum_x2 += x2;
+            sum_y2 += y2;
+            sum_x3 += x2 * x;
+            sum_y3 += y2 * y;
+            sum_xy += x * y;
+            sum_x1y2 += x * y2;
+            sum_x2y1 += x2 * y;
+        }
+
+        double C, D, E, G, H;
+        double a, b, c;
+
+        C = N * sum_x2 - sum_x * sum_x;
+        D = N * sum_xy - sum_x * sum_y;
+        E = N * sum_x3 + N * sum_x1y2 - (sum_x2 + sum_y2) * sum_x;
+        G = N * sum_y2 - sum_y * sum_y;
+        H = N * sum_x2y1 + N * sum_y3 - (sum_x2 + sum_y2) * sum_y;
+        a = (H * D - E * G) / (C * G - D * D);
+        b = (H * C - E * D) / (D * D - G * C);
+        c = -(a * sum_x + b * sum_y + sum_x2 + sum_y2) / N;
+
+        center_x = a / (-2);
+        center_y = b / (-2);
+        radius = std::sqrt(a * a + b * b - 4 * c) / 2;
+        return true;
+    }
+
+    // count IoU
+    double AngleSolve::countArmorIoU(Armor armor1, Armor armor2)
+    {
+        double area1 = armor1.size.area();
+        double area2 = armor2.size.area();
+
+        std::vector<cv::Point2f> cross_points;
+        cv::rotatedRectangleIntersection(armor1, armor2, cross_points);
+
+        double area3 = cv::contourArea(cross_points);
+
+        return (area3) / (area1 + area2 - area3);
+    }
+
 }

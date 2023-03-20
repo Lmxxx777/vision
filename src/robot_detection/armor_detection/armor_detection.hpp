@@ -9,9 +9,6 @@
 #include "number_DNN.h"
 #include <iostream>
 
-#define POINT_DIST(p1,p2) std::sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y))
-#define COLOR(str) std::strcmp(str.c_str(),"RED") == 0? RED : BLUE
-
 namespace robot_detection {
     //灯条结构体
     struct Light : public cv::RotatedRect     //灯条结构体
@@ -54,7 +51,8 @@ namespace robot_detection {
             grade = 0;
         }
 
-        cv::Point2f armor_pt4[4]; //左下角开始逆时针
+        // cv::Point2f armor_pt4[4]; //左下角开始逆时针
+        std::vector<cv::Point2f> armor_pt4; //左下角开始逆时针
         double confidence;
         int id;  // 装甲板类别
         int grade;
@@ -131,7 +129,7 @@ namespace robot_detection {
 
         void chooseTarget(); //找出优先级最高的装甲板
 
-        bool isLight(Light& light, std::vector<cv::Point> &cnt);
+        bool isLight(Light& light, std::vector<cv::Point2f> &cnt);
 
         bool conTain(cv::RotatedRect &match_rect,std::vector<Light> &Lights, size_t &i, size_t &j);
 
