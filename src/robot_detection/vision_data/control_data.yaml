@@ -11,7 +11,7 @@ buff_in_h: 0.043
 buff_out_w: 0.337836
 buff_out_h: 0.047
 buff_radius: 0.700
-buff_convex: 0.145
+buff_convex: 0.146
 
 
 self_type: omni_infantry

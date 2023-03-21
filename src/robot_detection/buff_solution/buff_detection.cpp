@@ -4,6 +4,10 @@ namespace robot_detection
 {
     BuffDetector::BuffDetector()
     {
+        int state = 0;
+        bool isSmallBuff = false;
+        bool isClockwise = false;
+        bool isInitYaw = false;
         cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", cv::FileStorage::READ);
 
         //binary_thresh
@@ -34,8 +38,19 @@ namespace robot_detection
         fs.release();
     }
 
+    void BuffDetector::reset()
+    {
+
+    }
+
     bool BuffDetector::detectRsult(const cv::Mat src)
     {
+        if(!isInitYaw)
+        {
+            isInitYaw = initYaw();
+            return false;
+        }
+
         setImage(src);
         extractContours();
 
@@ -46,9 +61,24 @@ namespace robot_detection
             if(!fitCircle())
                 return false;
         }
+        else
+        {
+            if(findComponents())
+            {
+                matchComponents();
+            }
+
+        }
 
 
 
+        return true;
+    }
+
+    bool BuffDetector::initYaw()
+    {
+        Eigen::Vector3d yaw = {0, 0, AS.ab_yaw};
+        AS.RotationMatrix_imu2buff = AS.eulerAnglesToRotationMatrix(yaw);
         return true;
     }
 
@@ -67,36 +97,69 @@ namespace robot_detection
 
     void BuffDetector::extractContours()
     {
-	    findContours(_binary, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
-    }       
+	    findContours(_binary, all_contours, all_hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
+    }      
+
+    bool BuffDetector::matchColor(std::vector<cv::Point2f> contour)
+    {
+        cv::RotatedRect rrt = cv::minAreaRect(contour);
+        double contour_area = cv::contourArea(contour);
+        cv::Rect2f rect = rrt.boundingRect();
+        if (0 <= rect.x && 0 <= rect.width  && rect.x + rect.width  <= _src.cols &&
+            0 <= rect.y && 0 <= rect.height && rect.y + rect.height <= _src.rows)
+        {
+            int sum_r = 0, sum_b = 0;
+            cv::Mat roi = _src(rect);
+            for (int i = 0; i < roi.rows; i++)
+            {
+                for (int j = 0; j < roi.cols; j++)
+                {
+                    if (cv::pointPolygonTest(contour, cv::Point2f(j + rect.x, i + rect.y), false) >= 0) // 只加正矩形中的轮廓！！！
+                    {
+                        sum_r += roi.at<cv::Vec3b>(i, j)[2];
+                        sum_b += roi.at<cv::Vec3b>(i, j)[0];
+                    }
+                }
+            }
+            int color = sum_r > sum_b ? RED : BLUE;
+            if(color = enemy_color)
+                return true;
+            else
+                return false;
+        }
+    }
 
     bool BuffDetector::findRcenter()
     {
-        for(int i=0; i<contours.size(); ++i)
+        for(int i=0; i<r_contours.size(); ++i)
         {
-            double r_area = cv::contourArea(contours[i]);
-            cv::Rect2f r_rt = cv::boundingRect(contours[i]);
+            double r_area = cv::contourArea(r_contours[i]);
+            cv::Rect2f r_rt = cv::boundingRect(r_contours[i]);
             double full_ratio = r_area / (r_rt.height * r_rt.width);
             double square_ratio = r_rt.height / r_rt.width;
 
             bool area_ok = (r_area < r_max_area) && (r_area > r_min_area) ? true : false;
-            bool contour_ok = (hierarchy[i][2] == -1 && hierarchy[i][3] == -1) ? true : false;
+            bool contour_ok = (r_hierarchy[i][2] == -1 && r_hierarchy[i][3] == -1) ? true : false;
             bool full_ratio_ok = (full_ratio < r_full_ratio_max) && (full_ratio > r_full_ratio_min) ? true : false;
             bool is_like_square = (square_ratio < 1.2) && (square_ratio > 0.8) ? true : false;
             // TODO: template R
             bool is_r_ok;  
-            if(area_ok && contour_ok && full_ratio_ok && is_r_ok)
+            if(area_ok && contour_ok && full_ratio_ok && is_like_square && is_r_ok)
             {
-                r_center.r_rect = r_rt;
-                r_center.r_rect_points = {
-                    {r_center.r_rect.x, r_center.r_rect.y},
-                    {r_center.r_rect.x + r_center.r_rect.width, r_center.r_rect.y},
-                    {r_center.r_rect.x + r_center.r_rect.width, r_center.r_rect.y + r_center.r_rect.height},
-                    {r_center.r_rect.x, r_center.r_rect.y + r_center.r_rect.height},
-                };
-                r_center.r_center_imu_position = AS.pixel2imu(r_center.r_rect_points, BUFF_R);
-                r_center.r_center_points.push_back(r_center.r_center_imu_position);
-                return true;
+                bool is_color_ok = matchColor(r_contours[i]);
+                if(is_color_ok)
+                {
+                    r_center.rect = r_rt;
+                    r_center.points_4 = {
+                        {r_center.rect.x, r_center.rect.y},
+                        {r_center.rect.x + r_center.rect.width, r_center.rect.y},
+                        {r_center.rect.x + r_center.rect.width, r_center.rect.y + r_center.rect.height},
+                        {r_center.rect.x, r_center.rect.y + r_center.rect.height},
+                    };
+                    r_center.imu_position = AS.pixel2imu(r_center.points_4, BUFF_R);
+                    r_center.vec_points.emplace_back(r_center.imu_position);
+                    return true;
+                }
             }
         }
         return false;
@@ -105,18 +168,18 @@ namespace robot_detection
     bool BuffDetector::fitCircle()
     {
         // TODO: fit circle, 检测不良数值
-        if(r_center.r_center_points.size() <= fit_circle_counts)
+        if(r_center.vec_points.size() <= fit_circle_counts)
         {
             return false;
         }
         else
         {
-            Eigen::Vector3d temp = r_center.r_center_points[0];
+            Eigen::Vector3d temp = r_center.vec_points[0];
             for(int i=1; i<fit_circle_counts; ++i)
             {
-                temp = (temp + r_center.r_center_points[i]) / 2;
+                temp = (temp + r_center.vec_points[i]) / 2;
             }
-            r_center.r_center_imu_position = temp;
+            r_center.imu_position = temp;
             isFindR = true;
             return true;
         }
@@ -125,10 +188,10 @@ namespace robot_detection
     // 找击打和未击打的符叶的零部件
     bool BuffDetector::findComponents()
     {
-        for(int i=0; i<contours.size(); ++i)
+        for(int i=0; i<buff_contours.size(); ++i)
         {
-            double buff_area = cv::contourArea(contours[i]);
-            cv::RotatedRect buff_rrt = cv::minAreaRect(contours[i]);
+            double buff_area = cv::contourArea(buff_contours[i]);
+            cv::RotatedRect buff_rrt = cv::minAreaRect(buff_contours[i]);
             double full_ratio = buff_area / (buff_rrt.size.height * buff_rrt.size.width);
             double w = buff_rrt.size.height > buff_rrt.size.width ? buff_rrt.size.height : buff_rrt.size.width;
             double h = buff_rrt.size.height < buff_rrt.size.width ? buff_rrt.size.height : buff_rrt.size.width;
@@ -138,10 +201,12 @@ namespace robot_detection
             bool no_area_ok = (buff_area < no_buff_area_max) && (buff_area > no_buff_area_min) ? true : false;
             bool no_full_ratio_ok = (full_ratio < no_full_ratio_max) && (full_ratio > no_full_ratio_min) ? true : false;
             bool no_is_like_rectangle = (rectangle_ratio < 2.5) && (rectangle_ratio > 2.2) ? true : false;
-            bool no_contour_ok = (hierarchy[i][2] == -1 && hierarchy[i][3] == -1) ? true : false;
+            bool no_contour_ok = (buff_hierarchy[i][2] == -1 && buff_hierarchy[i][3] == -1) ? true : false;
             if(no_area_ok && no_full_ratio_ok && no_is_like_rectangle && no_contour_ok)
             {
-                components_rrt.push_back(buff_rrt);
+                bool is_color_ok = matchColor(r_contours[i]);
+                if(is_color_ok)
+                    components_rrt.emplace_back(buff_rrt);
             }
 
             // TODO: 讨论识别它的必要性，多加一点拟合用的数据
@@ -166,7 +231,7 @@ namespace robot_detection
     // 匹配找到的零部件，靠三点一线约束
     bool BuffDetector::matchComponents()
     {
-        cv::Point2f r_point = AS.imu2pixel(r_center.r_center_imu_position);
+        cv::Point2f r_point = AS.imu2pixel(r_center.imu_position);
 
         for(int i = 0; i < components_rrt.size(); ++i)
         {
@@ -191,5 +256,40 @@ namespace robot_detection
         return true;
     }
 
+    // 重新定义旋转矩形的点，左上角顺时针
+    void BuffDetector::redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt)
+    {
+        rrt.points(p);
+        cv::Point2f temp;
+        //按X轴排序
+        std::sort(p, p+4,[](cv::Point2f a, cv::Point2f b) {return a.x < b.x; });
+        // X坐标前两个定义左上,左下
+        if (p[0].y > p[1].y) {
+            temp = p[0];
+            p[0] = p[1];
+            p[1] = p[3];
+            p[3] = temp;
+        }
+        else {
+            temp = p[3];
+            p[3] = p[1];
+            p[1] = temp;
+        }
+        // X坐标后两个定义右上右下角
+        if (p[1].y > p[2].y) {
+            temp = p[1];
+            p[1] = p[2];
+            p[2] = temp;
+        }
+    }
 
+    bool BuffDetector::isRotateClockwise()
+    {
+        
+
+
+    }
+    
+
+    
 }

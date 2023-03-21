@@ -196,6 +196,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
             vision_send_data.target_lock = 0x32;
             // transform.setOrigin(tf::Vector3(0,0,0));
         }
+        vision_send_data.aim_id = Track.tracking_id;
         vision_send_data.pitch = Track.pitch;
         vision_send_data.yaw = Track.yaw;
     }
@@ -207,6 +208,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         // vision_send_data.pitch = Track.pitch;
         // vision_send_data.yaw = Track.yaw;
         // transform.setOrigin(tf::Vector3(0,0,0));
+        vision_send_data.aim_id = 0;
         vision_send_data.pitch = Track.AS.ab_pitch;
         vision_send_data.yaw = Track.AS.ab_yaw;
     }

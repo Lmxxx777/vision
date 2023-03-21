@@ -31,11 +31,8 @@ namespace robot_detection{
         fs[self_type]["C_MAT"] >> C_MAT;
         cv::cv2eigen(F_MAT,F_EGN);
         cv::cv2eigen(C_MAT,C_EGN);
-
-        cv::Mat temp;
-        fs[self_type]["RotationMatrix_cam2imu"] >> temp;
-        cv::cv2eigen(temp,RotationMatrix_cam2imu);
         
+        cv::Mat temp;
         fs[self_type]["center_offset_position"] >> temp;
         cv::cv2eigen(temp,center_offset_position);
 

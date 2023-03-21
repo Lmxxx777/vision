@@ -12,10 +12,10 @@ namespace robot_detection
     // R标
     struct R_center
     {
-        cv::Rect2f r_rect;
-        Eigen::Vector3d r_center_imu_position;
-        std::vector<cv::Point2f> r_rect_points;
-        std::vector<Eigen::Vector3d> r_center_points;
+        cv::Rect2f rect;
+        Eigen::Vector3d imu_position;
+        std::vector<cv::Point2f> points_4;
+        std::vector<Eigen::Vector3d> vec_points;
         R_center() = default;
     };
 
@@ -24,7 +24,8 @@ namespace robot_detection
     {
         cv::RotatedRect in_rrt;
         cv::RotatedRect out_rrt;
-        std::vector<cv::Point2d> points;
+        std::vector<cv::Point2d> points_5;
+        Eigen::Vector3d imu_position;
         // std::vector<cv::Point2f> contour;
         Buff_no() = default;
     };
@@ -35,8 +36,8 @@ namespace robot_detection
         int number;
         cv::RotatedRect in_rrt;
         cv::RotatedRect out_rrt;
-        std::vector<cv::Point2d> points;
-
+        std::vector<cv::Point2d> points_5;
+        Eigen::Vector3d imu_position;
         Buff_yes() = default;
     };
 
@@ -45,22 +46,32 @@ namespace robot_detection
     {
     public:
         BuffDetector();
+        void reset();
         bool detectRsult(const cv::Mat src);
 
         // 0：R未找到，1：找一对括号，2：已经击中一个，5：差最后一个
         int state;
+        bool isSmallBuff;
+        bool isClockwise;
 
         AngleSolve AS;
+        bool isInitYaw;
+        bool initYaw();
 
         // image
         cv::Mat _src;
         cv::Mat _binary;
         int binary_threshold;
         int enemy_color;
-        std::vector<std::vector<cv::Point2f>> contours;
-	    std::vector<cv::Vec4i> hierarchy;
+        std::vector<std::vector<cv::Point2f>> all_contours;
+	    std::vector<cv::Vec4i> all_hierarchy;
+        std::vector<std::vector<cv::Point2f>> r_contours;
+        std::vector<cv::Vec4i> r_hierarchy;
+        std::vector<std::vector<cv::Point2f>> buff_contours;
+        std::vector<cv::Vec4i> buff_hierarchy;
         void setImage(const cv::Mat src);
         void extractContours();
+        bool matchColor(std::vector<cv::Point2f> contour);
 
         // R
         bool isFindR;
@@ -72,6 +83,13 @@ namespace robot_detection
         double r_full_ratio_max;
         bool findRcenter();
         bool fitCircle();
+
+        // Buff_components
+        std::vector<cv::RotatedRect> components_rrt;
+        bool findComponents();
+        bool matchComponents();
+        void redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt);
+        bool isRotateClockwise();
 
         // Buff_no
         Buff_no buff_no;
@@ -87,10 +105,6 @@ namespace robot_detection
         double yes_full_ratio_min;
         double yes_full_ratio_max;
 
-        // Buff_components
-        std::vector<cv::RotatedRect> components_rrt;
-        bool findComponents();
-        bool matchComponents();
 
 
 
