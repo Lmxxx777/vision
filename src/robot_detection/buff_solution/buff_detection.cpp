@@ -67,7 +67,12 @@ namespace robot_detection
             {
                 matchComponents();
             }
+            if(!calculateBuffPosition())
+            {
+                return false;
+            }
 
+            isRotateClockwise();
         }
 
 
@@ -124,8 +129,34 @@ namespace robot_detection
             int color = sum_r > sum_b ? RED : BLUE;
             if(color = enemy_color)
                 return true;
-            else
-                return false;
+        }
+        return false;
+    }
+
+    // 重新定义旋转矩形的点，左上角顺时针
+    void BuffDetector::redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt)
+    {
+        rrt.points(p);
+        cv::Point2f temp;
+        //按X轴排序
+        std::sort(p, p+4,[](cv::Point2f a, cv::Point2f b) {return a.x < b.x; });
+        // X坐标前两个定义左上,左下
+        if (p[0].y > p[1].y) {
+            temp = p[0];
+            p[0] = p[1];
+            p[1] = p[3];
+            p[3] = temp;
+        }
+        else {
+            temp = p[3];
+            p[3] = p[1];
+            p[1] = temp;
+        }
+        // X坐标后两个定义右上右下角
+        if (p[1].y > p[2].y) {
+            temp = p[1];
+            p[1] = p[2];
+            p[2] = temp;
         }
     }
 
@@ -134,9 +165,9 @@ namespace robot_detection
         for(int i=0; i<r_contours.size(); ++i)
         {
             double r_area = cv::contourArea(r_contours[i]);
-            cv::Rect2f r_rt = cv::boundingRect(r_contours[i]);
-            double full_ratio = r_area / (r_rt.height * r_rt.width);
-            double square_ratio = r_rt.height / r_rt.width;
+            cv::RotatedRect r_rrt = cv::minAreaRect(r_contours[i]);
+            double full_ratio = r_area / (r_rrt.size.height * r_rrt.size.width);
+            double square_ratio = r_rrt.size.height / r_rrt.size.width;
 
             bool area_ok = (r_area < r_max_area) && (r_area > r_min_area) ? true : false;
             bool contour_ok = (r_hierarchy[i][2] == -1 && r_hierarchy[i][3] == -1) ? true : false;
@@ -149,15 +180,13 @@ namespace robot_detection
                 bool is_color_ok = matchColor(r_contours[i]);
                 if(is_color_ok)
                 {
-                    r_center.rect = r_rt;
-                    r_center.points_4 = {
-                        {r_center.rect.x, r_center.rect.y},
-                        {r_center.rect.x + r_center.rect.width, r_center.rect.y},
-                        {r_center.rect.x + r_center.rect.width, r_center.rect.y + r_center.rect.height},
-                        {r_center.rect.x, r_center.rect.y + r_center.rect.height},
-                    };
-                    r_center.imu_position = AS.pixel2imu(r_center.points_4, BUFF_R);
+                    r_center.rotatedrect = r_rrt;
+                    cv::Point2f pts[4];
+                    redefineRotatedRectPoints(pts,r_rrt);
+                    r_center.points_4 = {pts[0],pts[1],pts[2],pts[3],};
+                    r_center.imu_position = AS.imu2buff(AS.pixel2imu(r_center.points_4, BUFF_R));
                     r_center.vec_points.emplace_back(r_center.imu_position);
+                    r_center.pixel_position = r_rrt.center;
                     return true;
                 }
             }
@@ -250,44 +279,99 @@ namespace robot_detection
                 {
                     buff_no.in_rrt = components_rrt[j];
                     buff_no.out_rrt = components_rrt[i];
+                    buff_no.pixel_position = (components_rrt[j].center + components_rrt[i].center) / 2;
                 }
             }
         }
         return true;
     }
 
-    // 重新定义旋转矩形的点，左上角顺时针
-    void BuffDetector::redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt)
+    bool BuffDetector::calculateBuffPosition()
     {
-        rrt.points(p);
-        cv::Point2f temp;
-        //按X轴排序
-        std::sort(p, p+4,[](cv::Point2f a, cv::Point2f b) {return a.x < b.x; });
-        // X坐标前两个定义左上,左下
-        if (p[0].y > p[1].y) {
-            temp = p[0];
-            p[0] = p[1];
-            p[1] = p[3];
-            p[3] = temp;
+        cv::Point2f out_rrt_pts[4];
+	    buff_no.out_rrt.points(out_rrt_pts);
+        cv::Point2f in_rrt_pts[4];
+	    buff_no.in_rrt.points(in_rrt_pts);
+
+        // TODO: 评估和实测下面两种方法的效果，理论上来说后一个会好一点，但是怕有特殊情况
+
+        // 通过约束来确定，不管输入顺序是否有影响
+        // out_rrt
+        int s1 = INT_MAX, s2 = INT_MAX; // s1存储最小值，s2存储第二小值
+        int s_idx1 = 0, s_idx2 = 1;
+        for (int i = 0; i < 4; ++i)
+        {
+            double dis = POINT_DIST(out_rrt_pts[i],r_center.pixel_position);
+            if (dis < s1)
+            {
+                s2 = s1;
+                s1 = dis;
+                s_idx1 = i;
+            }
+            else if (dis < s2)
+            {
+                s2 = dis;
+                s_idx2 = i;
+            }
         }
-        else {
-            temp = p[3];
-            p[3] = p[1];
-            p[1] = temp;
+        // in_rrt
+        int b1 = 0, b2 = 0; // b1存储最大值，b2存储第二大值
+        int b_idx1 = 0, b_idx2 = 1;
+        for (int i = 0; i < 4; ++i)
+        {
+            double dis = POINT_DIST(in_rrt_pts[i],r_center.pixel_position);
+            if (dis > b1)
+            {
+                b2 = b1;
+                b1 = dis;
+                b_idx1 = i;
+            }
+            else if (dis > b2)
+            {
+                b2 = dis;
+                b_idx2 = i;
+            }
         }
-        // X坐标后两个定义右上右下角
-        if (p[1].y > p[2].y) {
-            temp = p[1];
-            p[1] = p[2];
-            p[2] = temp;
-        }
+        buff_no.points_5 = {
+            out_rrt_pts[0],
+            out_rrt_pts[1],
+            in_rrt_pts[1],
+            in_rrt_pts[0],
+            r_center.pixel_position,};
+
+        // 通过规定顺序来确定五点
+        redefineRotatedRectPoints(out_rrt_pts,buff_no.out_rrt);
+        redefineRotatedRectPoints(in_rrt_pts,buff_no.in_rrt);
+        buff_no.points_5 = {
+            out_rrt_pts[0],
+            out_rrt_pts[1],
+            in_rrt_pts[1],
+            in_rrt_pts[0],
+            r_center.pixel_position,};
+
+        buff_no.imu_position = AS.imu2buff(AS.pixel2imu(buff_no.points_5, BUFF_NO));
+
+        return true;
     }
 
     bool BuffDetector::isRotateClockwise()
     {
+        // 在相机坐标系下规定五点
+        double angle = atan2((buff_no.imu_position[2] - r_center.imu_position[2]),(buff_no.imu_position[0] - r_center.imu_position[0]));
+        angle = angle / CV_PI * 180;
+        if(angle<0)
+            angle += 360;
         
-
-
+        if(angle-last_angle<0)
+        {
+            isClockwise = false;
+            return true;
+        }
+        else
+        {
+            isClockwise = true;
+            return false;
+        }
     }
     
 

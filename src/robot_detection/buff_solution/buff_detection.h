@@ -12,8 +12,10 @@ namespace robot_detection
     // R标
     struct R_center
     {
-        cv::Rect2f rect;
+        cv::RotatedRect rotatedrect;
         Eigen::Vector3d imu_position;
+        Eigen::Vector3d cam_position;
+        cv::Point2f pixel_position;
         std::vector<cv::Point2f> points_4;
         std::vector<Eigen::Vector3d> vec_points;
         R_center() = default;
@@ -24,9 +26,10 @@ namespace robot_detection
     {
         cv::RotatedRect in_rrt;
         cv::RotatedRect out_rrt;
-        std::vector<cv::Point2d> points_5;
         Eigen::Vector3d imu_position;
-        // std::vector<cv::Point2f> contour;
+        Eigen::Vector3d cam_position;
+        cv::Point2f pixel_position;
+        std::vector<cv::Point2f> points_5;
         Buff_no() = default;
     };
 
@@ -88,7 +91,11 @@ namespace robot_detection
         std::vector<cv::RotatedRect> components_rrt;
         bool findComponents();
         bool matchComponents();
+
+        //Buff calculation
         void redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt);
+        bool calculateBuffPosition();
+        double last_angle;
         bool isRotateClockwise();
 
         // Buff_no

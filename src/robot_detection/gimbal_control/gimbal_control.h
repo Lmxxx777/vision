@@ -50,8 +50,11 @@ namespace robot_detection{
         cv::Point2f imu2pixel(Eigen::Vector3d imu_pos);
         Eigen::Vector3d pixel2cam(Armor &armor, int type);
         Eigen::Vector3d pixel2imu(Armor &armor, int type);
+        // for BUFF
         Eigen::Vector3d pixel2cam(std::vector<cv::Point2f> points, int type);
         Eigen::Vector3d pixel2imu(std::vector<cv::Point2f> points, int type);
+        Eigen::Vector3d imu2buff(Eigen::Vector3d imu_pos);
+        Eigen::Vector3d buff2imu(Eigen::Vector3d buff_pos);
 
         Eigen::Vector3d airResistanceSolve(Eigen::Vector3d Pos);//consider gravity asn air resistance
         float BulletModel(float x, float v, float angle);

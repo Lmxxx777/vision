@@ -127,13 +127,25 @@ namespace robot_detection{
         Eigen::Vector3d cam_pos = pnpSolve(points,type);
         return cam_pos;
     }
+
     Eigen::Vector3d AngleSolve::pixel2imu(std::vector<cv::Point2f> points, int type)
     {
         Eigen::Vector3d cam_pos = pixel2cam(points,type);
         Eigen::Vector3d imu_pos = cam2imu(cam_pos);
         return imu_pos;
     }
-    
+
+    Eigen::Vector3d AngleSolve::imu2buff(Eigen::Vector3d imu_pos)
+    {
+        Eigen::Vector3d buff_pos = RotationMatrix_imu2buff * imu_pos;
+        return buff_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::buff2imu(Eigen::Vector3d buff_pos)
+    {
+        Eigen::Vector3d imu_pos = RotationMatrix_imu2buff.inverse() * buff_pos;
+        return imu_pos;
+    }
 
     float AngleSolve::BulletModel(float x, float v, float angle) { //x:m,v:m/s,angle:rad
         float t,y;
