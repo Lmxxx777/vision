@@ -145,9 +145,12 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     float roll = vision_data.roll;
     float pitch = vision_data.pitch;
     float yaw = vision_data.yaw;
-    float quaternion[4];////////////  --------------------todo : add quaternion------------------------------------////////////////////
-    for(int i = 0; i<vision_data.quaternion.size(); ++i)
-        quaternion[i] = vision_data.quaternion[i];
+        float quaternion[4] = {
+        vision_data.quaternion[0],
+        vision_data.quaternion[1],
+        vision_data.quaternion[2],
+        vision_data.quaternion[3],
+    };
     float bullet_speed = 28;
     int mode = vision_data.shoot_sta;
 

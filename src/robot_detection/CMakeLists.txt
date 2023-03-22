@@ -48,6 +48,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/armor_track            
   ${PROJECT_SOURCE_DIR}/armor_prediction
   ${PROJECT_SOURCE_DIR}/gimbal_control
+  ${PROJECT_SOURCE_DIR}/buff_solution
 )
 
 
@@ -72,7 +73,12 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.h
 )
 
-add_executable(robot_detection robot_detection.cpp)
+# for auto aim
+# add_executable(robot_detection robot_detection.cpp)
+# for buff aim
+# add_executable(robot_detection buff_solution.cpp)
+# for debug buff
+add_executable(robot_detection buff_debug.cpp)
 
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(robot_detection
@@ -83,14 +89,3 @@ target_link_libraries(robot_detection
   # Ceres::ceres
   robot_detection_lib
 )
-
-
-
-
-
-
-
-
-
-
-

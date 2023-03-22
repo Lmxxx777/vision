@@ -1,5 +1,8 @@
 #include "buff_detection.h"
 
+#define BINARY_SHOW
+#define DRAW_BUFF_CONTOURS
+
 namespace robot_detection
 {
     BuffDetector::BuffDetector()
@@ -93,16 +96,23 @@ namespace robot_detection
 
         //二值化
         cv::Mat gray;
-        cvtColor(_src,gray,cv::COLOR_BGR2GRAY);
-        threshold(gray,_binary,binary_threshold,255,cv::THRESH_BINARY);
+        cv::cvtColor(_src,gray,cv::COLOR_BGR2GRAY);
+        cv::threshold(gray,_binary,binary_threshold,255,cv::THRESH_BINARY);
 #ifdef BINARY_SHOW
-        imshow("_binary",_binary);
+        cv::imshow("_binary",_binary);
 #endif //BINARY_SHOW
     } 
 
     void BuffDetector::extractContours()
     {
 	    findContours(_binary, all_contours, all_hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
+#ifdef DRAW_BUFF_CONTOURS
+        cv::Mat buff_contour_src;
+        _src.copyTo(buff_contour_src);
+        for(int i=0;i< all_contours.size();i++)
+            cv::drawContours(buff_contour_src,all_contours,i,cv::Scalar(255,0,255),2,cv::LINE_8);
+        imshow("DRAW_BUFF_CONTOURS",buff_contour_src);
+#endif
     }      
 
     bool BuffDetector::matchColor(std::vector<cv::Point2f> contour)
@@ -127,7 +137,7 @@ namespace robot_detection
                 }
             }
             int color = sum_r > sum_b ? RED : BLUE;
-            if(color = enemy_color)
+            if(color = 2)
                 return true;
         }
         return false;
