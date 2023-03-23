@@ -76,7 +76,7 @@ namespace robot_detection {
 
         // initial KF --- x_post
         KF.initial_KF();
-        enemy_armor.world_position = AS.pixel2imu(enemy_armor,1);
+        enemy_armor.world_position = AS.pixel2imu(enemy_armor,enemy_armor.type);
         KF.setXPost(enemy_armor.world_position);
         // TODO: 这里用的是x和y是水平面的,顺序和数据是否正确
         Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(2,0)});
@@ -118,7 +118,7 @@ namespace robot_detection {
             double min_position_diff = DBL_MAX;
             for(auto & armor : find_armors)
             {
-                armor.world_position = AS.pixel2imu(armor,1);
+                armor.world_position = AS.pixel2imu(armor,armor.type);
                 Eigen::Vector3d pre = predicted_enemy.head(3);
                 double position_diff = (pre - armor.world_position).norm();
 
@@ -135,9 +135,7 @@ namespace robot_detection {
             {
                 // std::cout<<"yes"<<std::endl;
                 matched = true;
-                // TODO: 检测值两个点是否有差异
-                Eigen::Vector3d position_vec = AS.pixel2imu(matched_armor,1);
-                predicted_enemy = KF.update(position_vec);
+                predicted_enemy = KF.update(matched_armor.world_position);
             }
             else
             {
@@ -242,13 +240,13 @@ namespace robot_detection {
             reset();
             return false;
         }
-
+        // 不调Q和R，强制性相信观测值，不容置疑
         KF.setPosAndSpeed(enemy_armor.world_position,predicted_enemy.tail(3));
+
         if(tracker_state == LOSING)
         {
             enemy_armor.world_position = predicted_enemy.head(3);
             KF.setPosAndSpeed(enemy_armor.world_position,predicted_enemy.tail(3));
-            
         }
 
         return true;
@@ -297,7 +295,7 @@ namespace robot_detection {
     }
 
 
-    // 返回false保持现状，返回true开始控制    ddt --- chrono
+    // 返回false保持现状，返回true开始控制    
     bool ArmorTracker::locateEnemy(cv::Mat src, std::vector<Armor> armors, double time)
     {
         src.copyTo(_src);

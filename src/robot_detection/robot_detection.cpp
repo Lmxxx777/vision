@@ -145,12 +145,9 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     float roll = vision_data.roll;
     float pitch = vision_data.pitch;
     float yaw = vision_data.yaw;
-        float quaternion[4] = {
-        vision_data.quaternion[0],
-        vision_data.quaternion[1],
-        vision_data.quaternion[2],
-        vision_data.quaternion[3],
-    };
+    float quaternion[4];
+    for(int i = 0; i<vision_data.quaternion.size(); ++i)
+        quaternion[i] = vision_data.quaternion[i];
     float bullet_speed = 28;
     int mode = vision_data.shoot_sta;
 
@@ -161,7 +158,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("enemy_color  is  %d  \n", enemy_color);
     // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
     // ROS_INFO("mode         is  %x  \n", mode);
-    Track.AS.quaternionToRotationMatrix(quaternion);
+
+    // Track.AS.quaternionToRotationMatrix(quaternion);
 
     // detecting
     Targets = Detect.autoAim(src, enemy_color);
@@ -179,10 +177,11 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // port & aim_point
     robot_msgs::robot_ctrl vision_send_data;
     geometry_msgs::PointStamped aim_point;
-    
+ 
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
-    bool track_bool = Track.locateEnemy(src,Targets,now_time);
-    // track_bool = false;
+    bool track_bool;
+    // track_bool= Track.locateEnemy(src,Targets,now_time);
+    track_bool = false;
     if(track_bool)
     {
         mode = 1;
@@ -218,6 +217,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     // send port gimbal message
     vision_pub_.publish(vision_send_data);
+    ROS_INFO("Begin send gimbal control!!!");
+    
     
     // send aim point in camera
     aim_point.header.frame_id = "camera";
@@ -296,7 +297,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     {
         line(src, vertice_armor_singer[m], vertice_armor_singer[(m + 1) % 4], CV_RGB(255, 255, 0),2,cv::LINE_8);
     } 
-
 
     // Time
     ros::Time end = ros::Time::now();

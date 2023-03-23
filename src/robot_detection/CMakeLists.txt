@@ -56,13 +56,13 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/number_DNN/number_DNN.cpp
             ${PROJECT_SOURCE_DIR}/number_DNN/number_DNN.h 
             ${PROJECT_SOURCE_DIR}/armor_detection/armor_detection.cpp
-            ${PROJECT_SOURCE_DIR}/armor_detection/armor_detection.hpp
+            ${PROJECT_SOURCE_DIR}/armor_detection/armor_detection.h
             ${PROJECT_SOURCE_DIR}/armor_track/armor_track.cpp
             ${PROJECT_SOURCE_DIR}/armor_track/armor_track.h            
             ${PROJECT_SOURCE_DIR}/armor_prediction/armor_prediction.cpp
             ${PROJECT_SOURCE_DIR}/armor_prediction/armor_prediction.h
             ${PROJECT_SOURCE_DIR}/armor_prediction/singer_prediction.cpp
-            ${PROJECT_SOURCE_DIR}/armor_prediction/singer_prediction.hpp
+            ${PROJECT_SOURCE_DIR}/armor_prediction/singer_prediction.h
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.cpp
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.h
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.cpp
@@ -74,11 +74,11 @@ add_library(robot_detection_lib
 )
 
 # for auto aim
-# add_executable(robot_detection robot_detection.cpp)
+add_executable(robot_detection robot_detection.cpp)
 # for buff aim
 # add_executable(robot_detection buff_solution.cpp)
 # for debug buff
-add_executable(robot_detection buff_debug.cpp)
+# add_executable(robot_detection buff_debug.cpp)
 
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(robot_detection
@@ -89,3 +89,14 @@ target_link_libraries(robot_detection
   # Ceres::ceres
   robot_detection_lib
 )
+
+
+
+
+
+
+
+
+
+
+

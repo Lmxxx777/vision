@@ -1,4 +1,4 @@
-#include "armor_detection.hpp"
+#include "armor_detection.h"
 
 // #define BINARY_SHOW
 // #define DRAW_LIGHTS_CONTOURS
@@ -6,7 +6,7 @@
 #define SHOW_NUMROI
 // #define ERROR_DETECTION
 // #define DRAW_ARMORS_RRT
-#define DRAW_FINAL_ARMOR_S_CLASS
+// #define DRAW_FINAL_ARMOR_S_CLASS
 
 using namespace cv;
 using namespace std;
@@ -72,7 +72,7 @@ namespace robot_detection {
 #endif //BINARY_SHOW
     }
 
-    bool ArmorDetector::isLight(Light& light, vector<Point2f> &cnt)
+    bool ArmorDetector::isLight(Light& light, vector<Point> &cnt)
     {
         double height = light.height;
         double width = light.width;
@@ -111,7 +111,7 @@ namespace robot_detection {
 
     void ArmorDetector::findLights(int color)
     {
-        vector<vector<cv::Point2f>> contours;
+        vector<vector<cv::Point>> contours;
         vector<cv::Vec4i> hierarchy;
         cv::findContours(_binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
@@ -453,7 +453,7 @@ namespace robot_detection {
         cv::warpPerspective(numSrc, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
 
         // Get ROI
-        numDst = numDst(cv::Rect2f(cv::Point2f((warp_width - roi_size.width) / 2, 0), roi_size));
+        numDst = numDst(cv::Rect2f(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
 
         dnn_detect(numDst, armor);
 #ifdef SHOW_NUMROI

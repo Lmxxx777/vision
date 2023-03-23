@@ -1,11 +1,12 @@
-#include "singer_prediction.hpp"
+#include "singer_prediction.h"
 
 namespace robot_detection{
 
     Skalman::Skalman()
     {
         cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
-        shoot_delay = (float)fs["shoot_delay"];
+        shoot_delay = (double)fs["shoot_delay"];
+        error_distance = (double)fs["error_distance"];
         fs.release();
 
         //init H
@@ -254,7 +255,7 @@ namespace robot_detection{
     //    predicted_position << predicted_x,predicted_y,predicted_z;
         predicted_position = predicted_xyz;
         
-        if (!finite(predicted_position.norm()) || predicted_position.norm() - imu_position.norm() > 2){
+        if (!finite(predicted_position.norm()) || predicted_position.norm() - imu_position.norm() > error_distance){
             predicted_position = imu_position;
             return false;
         }

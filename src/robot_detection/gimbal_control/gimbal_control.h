@@ -1,7 +1,7 @@
 #include "robot_status.h"
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
-#include "armor_detection.hpp"
+#include "armor_detection.h"
 
 namespace robot_detection{
 
