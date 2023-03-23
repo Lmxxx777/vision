@@ -16,7 +16,7 @@ namespace robot_detection
         Eigen::Vector3d imu_position;
         Eigen::Vector3d cam_position;
         cv::Point2f pixel_position;
-        std::vector<cv::Point2f> points_4;
+        cv::Point2f  points_4[4];
         std::vector<Eigen::Vector3d> vec_points;
         R_center() = default;
     };
@@ -29,7 +29,7 @@ namespace robot_detection
         Eigen::Vector3d imu_position;
         Eigen::Vector3d cam_position;
         cv::Point2f pixel_position;
-        std::vector<cv::Point2f> points_5;
+        cv::Point2f points_5[5];
         Buff_no() = default;
     };
 
@@ -39,7 +39,7 @@ namespace robot_detection
         int number;
         cv::RotatedRect in_rrt;
         cv::RotatedRect out_rrt;
-        std::vector<cv::Point2d> points_5;
+        cv::Point2f points_5[5];
         Eigen::Vector3d imu_position;
         Buff_yes() = default;
     };

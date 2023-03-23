@@ -3,8 +3,8 @@
 
 #include <Eigen/Dense>
 #include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 #include "robot_status.h"
 #include "number_DNN.h"
 #include <iostream>
@@ -51,8 +51,7 @@ namespace robot_detection {
             grade = 0;
         }
 
-        // cv::Point2f armor_pt4[4]; //左下角开始逆时针
-        std::vector<cv::Point2f> armor_pt4; //左下角开始逆时针
+        cv::Point2f armor_pt4[4]; //左下角开始逆时针
         double confidence;
         int id;  // 装甲板类别
         int grade;

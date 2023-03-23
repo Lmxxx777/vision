@@ -18,14 +18,6 @@ namespace robot_detection {
         TRACKING,    // 处于跟踪状态
     };
 
-    // struct Jump_tracker {
-    //     Jump_tracker() = default;
-    //     chrono_time jump_time;
-    //     double delta_t;
-    //     double delta_x;
-    //     Armor jump_armor;
-    // };
-
     class ArmorTracker
     {
     public:
@@ -45,11 +37,6 @@ namespace robot_detection {
         bool estimateEnemy(double dt);
 
         bool locateEnemy(cv::Mat src, std::vector<Armor> armors, double time);
-
-        // bool updateSpinScore();
-        // void spin_detect();
-
-//    private:
 
         Armor enemy_armor;
         Eigen::Vector3d bullet_point;

@@ -193,7 +193,8 @@ namespace robot_detection
                     r_center.rotatedrect = r_rrt;
                     cv::Point2f pts[4];
                     redefineRotatedRectPoints(pts,r_rrt);
-                    r_center.points_4 = {pts[0],pts[1],pts[2],pts[3],};
+                    for(int index = 0; index < 4; index++)
+                        r_center.points_4[index] = pts[index];
                     r_center.imu_position = AS.imu2buff(AS.pixel2imu(r_center.points_4, BUFF_R));
                     r_center.vec_points.emplace_back(r_center.imu_position);
                     r_center.pixel_position = r_rrt.center;
@@ -342,22 +343,21 @@ namespace robot_detection
                 b_idx2 = i;
             }
         }
-        buff_no.points_5 = {
-            out_rrt_pts[0],
-            out_rrt_pts[1],
-            in_rrt_pts[1],
-            in_rrt_pts[0],
-            r_center.pixel_position,};
+
+        buff_no.points_5[0] = out_rrt_pts[0];
+        buff_no.points_5[1] = out_rrt_pts[1];
+        buff_no.points_5[2] = in_rrt_pts[1];
+        buff_no.points_5[3] = in_rrt_pts[0];
+        buff_no.points_5[4] = r_center.pixel_position;
 
         // 通过规定顺序来确定五点
         redefineRotatedRectPoints(out_rrt_pts,buff_no.out_rrt);
         redefineRotatedRectPoints(in_rrt_pts,buff_no.in_rrt);
-        buff_no.points_5 = {
-            out_rrt_pts[0],
-            out_rrt_pts[1],
-            in_rrt_pts[1],
-            in_rrt_pts[0],
-            r_center.pixel_position,};
+        buff_no.points_5[0] = out_rrt_pts[0];
+        buff_no.points_5[1] = out_rrt_pts[1];
+        buff_no.points_5[2] = in_rrt_pts[1];
+        buff_no.points_5[3] = in_rrt_pts[0];
+        buff_no.points_5[4] = r_center.pixel_position;
 
         buff_no.imu_position = AS.imu2buff(AS.pixel2imu(buff_no.points_5, BUFF_NO));
 

@@ -216,9 +216,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     }
 
     // send port gimbal message
-    vision_pub_.publish(vision_send_data);
-    ROS_INFO("Begin send gimbal control!!!");
-    
+    vision_pub_.publish(vision_send_data);    
     
     // send aim point in camera
     aim_point.header.frame_id = "camera";

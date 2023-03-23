@@ -6,7 +6,7 @@
 #define SHOW_NUMROI
 // #define ERROR_DETECTION
 // #define DRAW_ARMORS_RRT
-// #define DRAW_FINAL_ARMOR_S_CLASS
+#define DRAW_FINAL_ARMOR_S_CLASS
 
 using namespace cv;
 using namespace std;
@@ -17,7 +17,7 @@ namespace robot_detection {
     {
         cnt=0;
 
-        FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
+        FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70
@@ -139,7 +139,7 @@ namespace robot_detection {
             if (isLight(light, contour) && contour_area < light_area_max)
             {
                 //cout<<"is_Light   "<<endl;
-                cv::Rect2f rect = r_rect.boundingRect();
+                cv::Rect rect = r_rect.boundingRect();
 
                 if (0 <= rect.x && 0 <= rect.width  && rect.x + rect.width  <= _src.cols &&
                     0 <= rect.y && 0 <= rect.height && rect.y + rect.height <= _src.rows)
@@ -257,10 +257,7 @@ namespace robot_detection {
                         Armor armor(armor_rrect);
 
                         for(int index = 0; index < 4; index++)
-                        {
-                            // armor.armor_pt4[index] = pt4[index];
-                            armor.armor_pt4.push_back(pt4[index]);
-                        }
+                            armor.armor_pt4[index] = pt4[index];
 
                         if(small_wh_ratio_ok)
                             armor.type = SMALL;
@@ -394,6 +391,7 @@ namespace robot_detection {
             string info_grade = "grade: "+to_string(finalArmors[i].grade);
             putText(final_armors_src,info_grade,finalArmors[i].armor_pt4[0],FONT_HERSHEY_COMPLEX,2,Scalar(0,255,255),1,8);
         }
+
         if(finalArmors.size() != 0)
             imshow("DRAW_FINAL_ARMOR_S_CLASS", final_armors_src);
 #endif //DRAW_FINAL_ARMOR_S_CLASS
@@ -405,7 +403,7 @@ namespace robot_detection {
         finalArmors.clear();
         candidateArmors.clear();
         candidateLights.clear();
-        
+
         //do autoaim task
         setImage(src);
         findLights(color);
@@ -436,24 +434,16 @@ namespace robot_detection {
         const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
 
         cv::Point2f target_vertices[4] = {
-            cv::Point2f(0, bottom_light_y),
-            cv::Point2f(warp_width, bottom_light_y),
-            cv::Point2f(warp_width, top_light_y),
-            cv::Point2f(0, top_light_y),
+                cv::Point(0, bottom_light_y),
+                cv::Point(warp_width, bottom_light_y),
+                cv::Point(warp_width, top_light_y),
+                cv::Point(0, top_light_y),
         };
-
-        cv::Point2f src_vertices[4] = {
-            armor.armor_pt4[0],
-            armor.armor_pt4[1],
-            armor.armor_pt4[2],
-            armor.armor_pt4[3],
-        };
-
-        Mat rotation_matrix = cv::getPerspectiveTransform(src_vertices, target_vertices);
+        Mat rotation_matrix = cv::getPerspectiveTransform(armor.armor_pt4, target_vertices);
         cv::warpPerspective(numSrc, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
 
         // Get ROI
-        numDst = numDst(cv::Rect2f(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
+        numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
 
         dnn_detect(numDst, armor);
 #ifdef SHOW_NUMROI
@@ -471,7 +461,7 @@ namespace robot_detection {
 
     bool ArmorDetector::conTain(RotatedRect &match_rect,vector<Light> &Lights, size_t &i, size_t &j)
     {
-        Rect2f matchRoi = match_rect.boundingRect();
+        Rect matchRoi = match_rect.boundingRect();
         for (size_t k=i+1;k<j;k++)
         {
             Point2f lightPs[4];

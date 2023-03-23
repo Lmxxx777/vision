@@ -1,17 +1,16 @@
 #pragma once
-//opencv
 #include <opencv2/opencv.hpp>
 
-//basic parameter
-#define GRAVITY 9.78
-#define SMALL_AIR_K 0.01903
-#define BIG_AIR_K 0.00556
-#define BIG_LIGHT_AIR_K 0.00530
-
-#define POINT_DIST(p1,p2) std::sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y))
-#define COLOR(str) std::strcmp(str.c_str(),"RED") == 0? RED : BLUE
-
 namespace robot_detection {
+    //basic parameter
+    #define GRAVITY 9.78
+    #define SMALL_AIR_K 0.01903
+    #define BIG_AIR_K 0.00556
+    #define BIG_LIGHT_AIR_K 0.00530
+
+    #define POINT_DIST(p1,p2) std::sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y))
+    #define COLOR(str) std::strcmp(str.c_str(),"RED") == 0? RED : BLUE
+
 
     using seconds_duration = std::chrono::duration<double>;
     using milliseconds_duration = std::chrono::duration<double,std::milli>;
@@ -39,6 +38,7 @@ namespace robot_detection {
         robot_state() = default;
 
         void clone(robot_state &robot);
+
         void updateData(float data[4], float quat[4]);
         void updateDataColor(float data[4], float quat[4], int color);
     };

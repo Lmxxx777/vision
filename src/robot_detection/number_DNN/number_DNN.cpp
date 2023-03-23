@@ -6,7 +6,7 @@ namespace robot_detection {
 
     DNN_detect::DNN_detect()
     {
-        FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/dnn_data.yaml", FileStorage::READ);
+        FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/dnn_data.yaml", FileStorage::READ);
         net_path = (std::string)fs["net_path"];
         input_width = (int)fs["input_width"];
         input_height = (int)fs["input_height"];

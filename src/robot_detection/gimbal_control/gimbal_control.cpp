@@ -10,34 +10,23 @@ namespace robot_detection{
 
     AngleSolve::AngleSolve()
     {
-        cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
 
-        big_w = (double)fs["big_w"];
-        big_h = (double)fs["big_h"];
-        small_w = (double)fs["small_w"];
-        small_h = (double)fs["small_h"];
-        buff_r_w = (double)fs["buff_r_w"];
-        buff_r_h = (double)fs["buff_r_h"];
-        buff_in_w = (double)fs["buff_in_w"];
-        buff_in_h = (double)fs["buff_in_h"];
-        buff_out_w = (double)fs["buff_out_w"];
-        buff_out_h = (double)fs["buff_out_h"];
-        buff_radius = (double)fs["buff_radius"];
-        buff_convex = (double)fs["buff_convex"];
-
+        fs["big_w"] >> big_w;
+        fs["big_h"] >> big_h;
+        fs["small_w"] >> small_w;
+        fs["small_h"] >> small_h;
         fs["self_type"] >> self_type;
 
         fs[self_type]["F_MAT"] >> F_MAT;
         fs[self_type]["C_MAT"] >> C_MAT;
         cv::cv2eigen(F_MAT,F_EGN);
         cv::cv2eigen(C_MAT,C_EGN);
-        
+
         cv::Mat temp;
+        
         fs[self_type]["center_offset_position"] >> temp;
         cv::cv2eigen(temp,center_offset_position);
-
-        fs[self_type]["gimbal_offset_angle"] >> temp;
-        cv::cv2eigen(temp,gimbal_offset_angle);
 
         fs.release();
         fly_time = 0;
@@ -108,29 +97,29 @@ namespace robot_detection{
         return pixel_pos;
     }
 
-    // for armor
-    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor, int type)
+    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor, int method)
     {
-        armor.camera_position = pixel2cam(armor,type);
+        armor.camera_position = pixel2cam(armor,1);
         Eigen::Vector3d imu_pos = cam2imu(armor.camera_position);
         return imu_pos;
     }
-    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor, int type)
+
+    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor, int method)
     {
-        armor.camera_position = pnpSolve(armor.armor_pt4,type);
+        armor.camera_position = pnpSolve(armor.armor_pt4,armor.type,method);
         return armor.camera_position;
     }
 
     // for buff
-    Eigen::Vector3d AngleSolve::pixel2cam(std::vector<cv::Point2f> points, int type)
+    Eigen::Vector3d AngleSolve::pixel2cam(cv::Point2f *p, int type)
     {
-        Eigen::Vector3d cam_pos = pnpSolve(points,type);
+        Eigen::Vector3d cam_pos = pnpSolve(p,type,SOLVEPNP_ITERATIVE);
         return cam_pos;
     }
 
-    Eigen::Vector3d AngleSolve::pixel2imu(std::vector<cv::Point2f> points, int type)
+    Eigen::Vector3d AngleSolve::pixel2imu(cv::Point2f *p, int type)
     {
-        Eigen::Vector3d cam_pos = pixel2cam(points,type);
+        Eigen::Vector3d cam_pos = pixel2cam(p,type);
         Eigen::Vector3d imu_pos = cam2imu(cam_pos);
         return imu_pos;
     }
@@ -183,15 +172,16 @@ namespace robot_detection{
        return Vector3d(Pos[0],Pos[1],y_temp);  // imu
     }
 
-    Eigen::Vector3d AngleSolve::pnpSolve(std::vector<cv::Point2f> pu, int type)
+    Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type, int method = SOLVEPNP_IPPE)
     {
         std::vector<cv::Point3d> ps;
+        std::vector<cv::Point2f> pu;
 
         if(type == SMALL)
         {
             double w = small_w;
             double h = small_h;
-            std::vector<cv::Point3d> ps = {
+            ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
                     { w / 2 ,  h / 2, 0.},
@@ -202,7 +192,7 @@ namespace robot_detection{
         {
             double w = big_w;
             double h = big_h;
-            std::vector<cv::Point3d> ps = {
+            ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
                     { w / 2 ,  h / 2, 0.},
@@ -213,7 +203,7 @@ namespace robot_detection{
         {
             double w = buff_r_w;
             double h = buff_r_h;
-            std::vector<cv::Point3d> ps = {
+            ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
                     { w / 2 ,  h / 2, 0.},
@@ -222,19 +212,20 @@ namespace robot_detection{
         }
         else if(type == BUFF_NO)
         {
-            std::vector<cv::Point3d> ps = {
+            ps = {
                     {-buff_out_w / 2 , -buff_out_h , 0.},
                     { buff_out_w / 2 , -buff_out_h , 0.},
                     { buff_in_w / 2 ,  buff_in_h , 0.},
                     {-buff_in_w / 2 ,  buff_in_h , 0.},
                     {0 , buff_radius, -buff_convex},
             };
+            pu.push_back(p[4]);
         }
         else if(type == BUFF_YES)
         {
             double w = small_w;
             double h = small_h;
-            std::vector<cv::Point3d> ps = {
+            ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
                     { w / 2 ,  h / 2, 0.},
@@ -242,12 +233,16 @@ namespace robot_detection{
             };
         }
 
-        // begin solve
+        pu.push_back(p[3]);
+        pu.push_back(p[2]);
+        pu.push_back(p[1]);
+        pu.push_back(p[0]);
+
         cv::Mat rvec;
         cv::Mat tvec;
         Eigen::Vector3d tv;
 
-        cv::solvePnP(ps, pu, F_MAT, C_MAT, rvec, tvec);
+        cv::solvePnP(ps, pu, F_MAT, C_MAT, rvec, tvec/*, SOLVEPNP_IPPE*/);
         cv::cv2eigen(tvec, tv);
 
 #ifdef SHOW_MEASURE_RRECT
@@ -309,25 +304,16 @@ namespace robot_detection{
         return rpy;
     }
 
-    double AngleSolve::getFlyTime(Eigen::Vector3d &pos)
-    {
-        return pos.norm() / bullet_speed;
-    }
 
     Eigen::Vector3d AngleSolve::getAngle(Eigen::Vector3d predicted_position)
     {
         Vector3d world_dropPosition;
         world_dropPosition = airResistanceSolve(predicted_position);//calculate gravity and air resistance
         Eigen::Vector3d rpy = yawPitchSolve(world_dropPosition);//get need yaw and pitch
-
-        rpy[0] += gimbal_offset_angle[0];
-        rpy[1] += gimbal_offset_angle[1];
-        rpy[2] += gimbal_offset_angle[2];
-
         return rpy;
     }
 
-        // zyx
+    // zyx
     Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix(Eigen::Vector3d &theta)
     {
         Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
@@ -484,4 +470,8 @@ namespace robot_detection{
         return (area3) / (area1 + area2 - area3);
     }
 
+    double AngleSolve::getFlyTime(Eigen::Vector3d &pos)
+    {
+        return pos.norm() / bullet_speed;
+    }
 }
