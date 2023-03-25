@@ -56,11 +56,17 @@ namespace robot_detection {
             return false;
         }
 
-        sort(find_armors.begin(),find_armors.end(),
-            [](Armor &armor1,Armor &armor2){return armor1.grade > armor2.grade;});
-
-        // select enemy
-        enemy_armor = find_armors[0];
+        // select enemy : for sentry to find nearest aim
+        double distance = DBL_MAX;
+        for (auto & armor : find_armors)
+        {
+            double dis_tmp = armor.world_position.norm();
+            if (dis_tmp < distance)
+            {
+                enemy_armor = armor;
+                distance = dis_tmp;
+            }
+        }
         tracker_state = DETECTING;
         tracking_id = enemy_armor.id;
 
@@ -234,9 +240,9 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
-                // TODO: count error nums
                 std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
-                // return false;
+                reset();
+                return false;
             }
             ////////////////Singer predictor//////////////////////////////
             return true;
@@ -249,9 +255,9 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
-                // TODO: count error nums
                 std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
-                // return false;
+                reset();
+                return false;
             }
             ////////////////Singer predictor//////////////////////////////
 
@@ -267,7 +273,6 @@ namespace robot_detection {
         }
 
     }
-
 
     // 返回false保持现状，返回true开始控制    ddt --- chrono
     bool ArmorTracker::locateEnemy(cv::Mat src, std::vector<Armor> armors, double time)

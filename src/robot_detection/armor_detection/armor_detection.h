@@ -52,7 +52,7 @@ namespace robot_detection {
         }
 
         cv::Point2f armor_pt4[4]; //左下角开始逆时针
-        double confidence;
+        float confidence;
         int id;  // 装甲板类别
         int grade;
         int type;  // 装甲板类型
@@ -70,6 +70,7 @@ namespace robot_detection {
     private:
         int binThresh;
         int enemy_color;
+        int categories;
 
         //light_judge_condition
         double light_max_angle;
@@ -110,6 +111,7 @@ namespace robot_detection {
         std::vector<Light> candidateLights; // 筛选的灯条
         std::vector<Armor> candidateArmors; // 筛选的装甲板
         std::vector<Armor> finalArmors;
+        std::vector<cv::Mat> numROIs;
         Armor finalArmor;  // 最终装甲板
 
         DNN_detect dnnDetect;
@@ -127,10 +129,10 @@ namespace robot_detection {
         bool conTain(cv::RotatedRect &match_rect,std::vector<Light> &Lights, size_t &i, size_t &j);
 
         int armorGrade(const Armor& checkArmor);
+        
+        void preImplement(Armor& armor);
 
-        void detectNum(Armor& armor);
-
-        void dnn_detect(cv::Mat frame, Armor& armor);// 调用该函数即可返回数字ID
+        bool get_max(const float *data, float &confidence, int &id);
     };
 
 }

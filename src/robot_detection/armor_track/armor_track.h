@@ -57,6 +57,8 @@ namespace robot_detection {
         int lost_aim_cnt;  // 丢失目标计数
         int lost_threshold;
 
+        int prediction_false_cnt;  // 当预测的结果不正确时，连续计数超过阈值，重置
+
         double shoot_delay;
 
         double new_old_threshold; // 新旧坐标的距离阈值

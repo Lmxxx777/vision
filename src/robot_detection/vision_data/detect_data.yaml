@@ -31,3 +31,4 @@ near_grade_ratio: 0.2
 height_grade_ratio: 0.2
 # thresh_confidence
 thresh_confidence: 0.80
+categories: 9
