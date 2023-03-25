@@ -12,10 +12,19 @@ namespace robot_detection{
     {
         cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
 
-        fs["big_w"] >> big_w;
-        fs["big_h"] >> big_h;
-        fs["small_w"] >> small_w;
-        fs["small_h"] >> small_h;
+        big_w = (double)fs["big_w"];
+        big_h = (double)fs["big_h"];
+        small_w = (double)fs["small_w"];
+        small_h = (double)fs["small_h"];
+        buff_r_w = (double)fs["buff_r_w"];
+        buff_r_h = (double)fs["buff_r_h"];
+        buff_in_w = (double)fs["buff_in_w"];
+        buff_in_h = (double)fs["buff_in_h"];
+        buff_out_w = (double)fs["buff_out_w"];
+        buff_out_h = (double)fs["buff_out_h"];
+        buff_radius = (double)fs["buff_radius"];
+        buff_convex = (double)fs["buff_convex"];
+
         fs["self_type"] >> self_type;
 
         fs[self_type]["F_MAT"] >> F_MAT;
@@ -24,12 +33,13 @@ namespace robot_detection{
         cv::cv2eigen(C_MAT,C_EGN);
 
         cv::Mat temp;
-        
         fs[self_type]["center_offset_position"] >> temp;
         cv::cv2eigen(temp,center_offset_position);
 
+        fs[self_type]["gimbal_offset_angle"] >> temp;
+        cv::cv2eigen(temp,gimbal_offset_angle);
+
         fs.release();
-        fly_time = 0;
     }
 
     void AngleSolve::init(float r, float p, float y, float quat[4], float speed)
@@ -47,132 +57,7 @@ namespace robot_detection{
         RotationMatrix_imu = quaternionToRotationMatrix(quat);
     }
 
-    Eigen::Vector3d AngleSolve::cam2imu(Vector3d cam_pos)
-    {
-        // cam 2 imu(init),through test get, xyz-rpy
-        Vector3d pos_tmp;
-
-        // 左右手系，单靠旋转矩阵转换不了，与其矩阵运算不如直接赋值
-        // pos_tmp = RotationMatrix_cam2imu * cam_pos;
-        pos_tmp = {cam_pos[0],cam_pos[2],-cam_pos[1]};
-        // std::cout<<"cam_pos: "<<cam_pos.transpose()<<std::endl;
-
-        Vector3d imu_pos;
-        imu_pos += center_offset_position;
-        imu_pos = RotationMatrix_imu * pos_tmp;
-        // 加上两个坐标系的中心点的偏移量，先旋转后平移
-
-        // std::cout<<"imu_pos: "<<imu_pos<<std::endl;
-        return imu_pos;
-    }
-
-    Eigen::Vector3d AngleSolve::imu2cam(Vector3d imu_pos)
-    {
-        Vector3d tmp_pos;
-        tmp_pos = RotationMatrix_imu.inverse() * imu_pos;
-        tmp_pos -= center_offset_position;
-
-        Vector3d cam_pos;
-        // cam_pos = RotationMatrix_cam2imu.inverse() * tmp_pos;
-        cam_pos = {tmp_pos[0],-tmp_pos[2],tmp_pos[1]};
-        return cam_pos;
-    }
-
-    cv::Point2f AngleSolve::cam2pixel(Eigen::Vector3d cam_pos)
-    {
-        Vector3d tmp_pixel;
-        tmp_pixel = F_EGN * cam_pos;
-//         std::cout<<"tmp_pixel: "<<tmp_pixel<<std::endl;
-        cv::Point2f pixel_pos = Point2f((float)tmp_pixel[0]/tmp_pixel[2],(float)tmp_pixel[1]/tmp_pixel[2]);
-
-        return pixel_pos;
-    }
-
-    cv::Point2f AngleSolve::imu2pixel(Vector3d imu_pos)
-    {
-        Vector3d cam_pos = imu2cam(imu_pos);
-        cv::Point2f pixel_pos = cam2pixel(cam_pos);
-        // std::cout<<"[pixel_pos0]:"<<pixel_pos.x<<std::endl;
-        // std::cout<<"[pixel_pos1]:"<<pixel_pos.y<<std::endl;
-        return pixel_pos;
-    }
-
-    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor, int method)
-    {
-        armor.camera_position = pixel2cam(armor,1);
-        Eigen::Vector3d imu_pos = cam2imu(armor.camera_position);
-        return imu_pos;
-    }
-
-    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor, int method)
-    {
-        armor.camera_position = pnpSolve(armor.armor_pt4,armor.type,method);
-        return armor.camera_position;
-    }
-
-    // for buff
-    Eigen::Vector3d AngleSolve::pixel2cam(cv::Point2f *p, int type)
-    {
-        Eigen::Vector3d cam_pos = pnpSolve(p,type,SOLVEPNP_ITERATIVE);
-        return cam_pos;
-    }
-
-    Eigen::Vector3d AngleSolve::pixel2imu(cv::Point2f *p, int type)
-    {
-        Eigen::Vector3d cam_pos = pixel2cam(p,type);
-        Eigen::Vector3d imu_pos = cam2imu(cam_pos);
-        return imu_pos;
-    }
-
-    Eigen::Vector3d AngleSolve::imu2buff(Eigen::Vector3d imu_pos)
-    {
-        Eigen::Vector3d buff_pos = RotationMatrix_imu2buff * imu_pos;
-        return buff_pos;
-    }
-
-    Eigen::Vector3d AngleSolve::buff2imu(Eigen::Vector3d buff_pos)
-    {
-        Eigen::Vector3d imu_pos = RotationMatrix_imu2buff.inverse() * buff_pos;
-        return imu_pos;
-    }
-
-    float AngleSolve::BulletModel(float x, float v, float angle) { //x:m,v:m/s,angle:rad
-        float t,y;
-        t = (float)((exp(SMALL_AIR_K * x) - 1) / (SMALL_AIR_K * v * cos(angle)));
-        y = (float)(v * sin(angle) * t - GRAVITY * t * t/* * cos(ab_pitch)*/ / 2);   // 在相机坐标系下需要这个垂直夹角
-        //printf("fly_time:  %f\n",t);
-        return y;
-    }
-
-    Eigen::Vector3d AngleSolve::airResistanceSolve(Vector3d Pos)
-    {
-        // std::cout<<"fvgbhjkvghbj: "<< Pos.transpose()  <<std::endl;
-        //at world coordinate system
-        float y = (float)Pos[2];
-        // -----------要水平距离的融合，否则计算的距离会少，在视野边缘处误差会大----------
-        float x = (float)sqrt(Pos[0]*Pos[0]+ Pos[1]*Pos[1]);
-
-        float y_temp, y_actual, dy;
-        float a;
-        y_temp = y;
-        // by iteration
-        for (int i = 0; i < 20; i++)
-        {
-            a = (float)atan2(y_temp, x);
-            y_actual = BulletModel(x, bullet_speed, a);
-            dy = y - y_actual;
-            y_temp = y_temp + dy;
-            if (fabsf(dy) < 0.001) {
-                break;
-            }
-            // printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
-        }
-
-        // return Vector3d(Pos[0],-y_temp,Pos[2]);  // cam
-       return Vector3d(Pos[0],Pos[1],y_temp);  // imu
-    }
-
-    Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type, int method = SOLVEPNP_IPPE)
+    Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type)
     {
         std::vector<cv::Point3d> ps;
         std::vector<cv::Point2f> pu;
@@ -290,14 +175,138 @@ namespace robot_detection{
         return tv;
     }
 
+    Eigen::Vector3d AngleSolve::cam2imu(Vector3d cam_pos)
+    {
+        // cam 2 imu(init),through test get, xyz-rpy
+        Vector3d pos_tmp;
+
+        // 左右手系，单靠旋转矩阵转换不了，与其矩阵运算不如直接赋值
+        // pos_tmp = RotationMatrix_cam2imu * cam_pos;
+        pos_tmp = {cam_pos[0],cam_pos[2],-cam_pos[1]};
+        // std::cout<<"cam_pos: "<<cam_pos.transpose()<<std::endl;
+
+        Vector3d imu_pos;
+        pos_tmp += center_offset_position;
+        imu_pos = RotationMatrix_imu * pos_tmp;
+        // 加上两个坐标系的中心点的偏移量，先旋转后平移
+
+        // std::cout<<"imu_pos: "<<imu_pos<<std::endl;
+        return imu_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::imu2cam(Vector3d imu_pos)
+    {
+        Vector3d tmp_pos;
+        tmp_pos = RotationMatrix_imu.inverse() * imu_pos;
+        tmp_pos -= center_offset_position;
+
+        Vector3d cam_pos;
+        // cam_pos = RotationMatrix_cam2imu.inverse() * tmp_pos;
+        cam_pos = {tmp_pos[0],-tmp_pos[2],tmp_pos[1]};
+        return cam_pos;
+    }
+
+    cv::Point2f AngleSolve::cam2pixel(Eigen::Vector3d cam_pos)
+    {
+        Vector3d tmp_pixel;
+        tmp_pixel = F_EGN * cam_pos;
+//         std::cout<<"tmp_pixel: "<<tmp_pixel<<std::endl;
+        cv::Point2f pixel_pos = Point2f((float)tmp_pixel[0]/tmp_pixel[2],(float)tmp_pixel[1]/tmp_pixel[2]);
+
+        return pixel_pos;
+    }
+
+    cv::Point2f AngleSolve::imu2pixel(Vector3d imu_pos)
+    {
+        Vector3d cam_pos = imu2cam(imu_pos);
+        cv::Point2f pixel_pos = cam2pixel(cam_pos);
+        // std::cout<<"[pixel_pos0]:"<<pixel_pos.x<<std::endl;
+        // std::cout<<"[pixel_pos1]:"<<pixel_pos.y<<std::endl;
+        return pixel_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pixel2imu(Armor &armor)
+    {
+        armor.camera_position = pixel2cam(armor);
+        Eigen::Vector3d imu_pos = cam2imu(armor.camera_position);
+        return imu_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pixel2cam(Armor &armor)
+    {
+        armor.camera_position = pnpSolve(armor.armor_pt4,armor.type);
+        return armor.camera_position;
+    }
+
+    // for buff
+    Eigen::Vector3d AngleSolve::pixel2cam(cv::Point2f *p, int type)
+    {
+        Eigen::Vector3d cam_pos = pnpSolve(p,type);
+        return cam_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pixel2imu(cv::Point2f *p, int type)
+    {
+        Eigen::Vector3d cam_pos = pixel2cam(p,type);
+        Eigen::Vector3d imu_pos = cam2imu(cam_pos);
+        return imu_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::imu2buff(Eigen::Vector3d imu_pos)
+    {
+        Eigen::Vector3d buff_pos = RotationMatrix_imu2buff * imu_pos;
+        return buff_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::buff2imu(Eigen::Vector3d buff_pos)
+    {
+        Eigen::Vector3d imu_pos = RotationMatrix_imu2buff.inverse() * buff_pos;
+        return imu_pos;
+    }
+
+    float AngleSolve::BulletModel(float x, float v, float angle) { //x:m,v:m/s,angle:rad
+        float t,y;
+        t = (float)((exp(SMALL_AIR_K * x) - 1) / (SMALL_AIR_K * v * cos(angle)));
+        y = (float)(v * sin(angle) * t - GRAVITY * t * t/* * cos(ab_pitch)*/ / 2);   // 在相机坐标系下需要这个垂直夹角
+        //printf("fly_time:  %f\n",t);
+        return y;
+    }
+
+    Eigen::Vector3d AngleSolve::airResistanceSolve(Vector3d Pos)
+    {
+        //at world coordinate system
+        float y = (float)Pos[2];
+        // -----------要水平距离的融合，否则计算的距离会少，在视野边缘处误差会大----------
+        float x = (float)sqrt(Pos[0]*Pos[0]+ Pos[1]*Pos[1]);
+
+        float y_temp, y_actual, dy;
+        float a;
+        y_temp = y;
+        // by iteration
+        for (int i = 0; i < 20; i++)
+        {
+            a = (float)atan2(y_temp, x);
+            y_actual = BulletModel(x, bullet_speed, a);
+            dy = y - y_actual;
+            y_temp = y_temp + dy;
+            if (fabsf(dy) < 0.001) {
+                break;
+            }
+            // printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
+        }
+
+        // return Vector3d(Pos[0],-y_temp,Pos[2]);  // cam
+        return Vector3d(Pos[0],Pos[1],y_temp);  // imu
+    }
+
     Eigen::Vector3d AngleSolve::yawPitchSolve(Vector3d &Pos)
     {
-        
+
         Eigen::Vector3d rpy;
         rpy[2] = -atan2(Pos[0],Pos[1]) / CV_PI*180.0;
         rpy[1] = atan2(Pos[2],Pos[1]) / CV_PI*180.0;
         // rpy[1] = 0;
-        rpy[0] = atan2(Pos[0],Pos[1]) / CV_PI*180.0;
+        rpy[0] = atan2(Pos[2],Pos[0]) / CV_PI*180.0;
         // rpy[2] = -atan2(Pos[2],Pos[0]) / CV_PI*180.0;
         // rpy[1] = -(atan2(Pos[1],Pos[0]) / CV_PI*180.0-90);
         // rpy[0] = ab_pitch;
@@ -310,6 +319,11 @@ namespace robot_detection{
         Vector3d world_dropPosition;
         world_dropPosition = airResistanceSolve(predicted_position);//calculate gravity and air resistance
         Eigen::Vector3d rpy = yawPitchSolve(world_dropPosition);//get need yaw and pitch
+
+        rpy[0] += gimbal_offset_angle[0];
+        rpy[1] += gimbal_offset_angle[1];
+        rpy[2] += gimbal_offset_angle[2];
+
         return rpy;
     }
 
@@ -366,8 +380,8 @@ namespace robot_detection{
         Eigen::Matrix3d R_x;
         float w=quaternion[0],x=quaternion[1],y=quaternion[2],z=quaternion[3];
         R_x << 1-2*y*y-2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w,
-            2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w,
-            2*x*z-2*y*w, 2*y*z+2*w*x, 1-2*x*x-2*y*y;
+                2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w,
+                2*x*z-2*y*w, 2*y*z+2*w*x, 1-2*x*x-2*y*y;
 
         float roll = atan2(2*y*z + 2*w*x,1 - 2*x*x - 2*y*y)/CV_PI * 180.0f;
         float pitch = asin(2*w*y - 2*x*z)/CV_PI*180.0f;
@@ -401,7 +415,7 @@ namespace robot_detection{
             if(fabs(atan2(p2.y - p1.y, p2.x - p1.x)/CV_PI*180.0 - atan2(p3.y - p1.y, p3.x - p1.x)/CV_PI*180.0) <= error)
                 return true;
             else
-                return false;   
+                return false;
         }
     }
 

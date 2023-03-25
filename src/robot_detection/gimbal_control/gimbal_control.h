@@ -25,8 +25,6 @@ namespace robot_detection{
         double buff_radius;
         double buff_convex;
 
-        double fly_time;
-
         std::string self_type;
 
         Eigen::Matrix<double,3,3> RotationMatrix_imu; 
@@ -42,20 +40,19 @@ namespace robot_detection{
         Eigen::Matrix<double,3,3> coordinate_matrix;
         
         
-        Eigen::Vector3d pnpSolve(cv::Point2f *p, int type, int method);
+        Eigen::Vector3d pnpSolve(cv::Point2f *p, int type);
 
         Eigen::Vector3d cam2imu(Eigen::Vector3d cam_pos);
         Eigen::Vector3d imu2cam(Eigen::Vector3d imu_pos);
         cv::Point2f cam2pixel(Eigen::Vector3d imu_pos);
         cv::Point2f imu2pixel(Eigen::Vector3d imu_pos);
-        Eigen::Vector3d pixel2imu(Armor &armor, int method);
-        Eigen::Vector3d pixel2cam(Armor &armor, int method);
+        Eigen::Vector3d pixel2imu(Armor &armor);
+        Eigen::Vector3d pixel2cam(Armor &armor);
         // for BUFF
         Eigen::Vector3d pixel2cam(cv::Point2f *p, int type);
         Eigen::Vector3d pixel2imu(cv::Point2f *p, int type);
         Eigen::Vector3d imu2buff(Eigen::Vector3d imu_pos);
         Eigen::Vector3d buff2imu(Eigen::Vector3d buff_pos);
-
 
         Eigen::Vector3d getAngle(Eigen::Vector3d predicted_position);
         Eigen::Vector3d airResistanceSolve(Eigen::Vector3d Pos);//consider gravity asn air resistance

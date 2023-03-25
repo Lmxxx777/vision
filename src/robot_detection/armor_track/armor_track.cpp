@@ -30,22 +30,12 @@ namespace robot_detection {
 
         new_old_threshold = (double)fs["new_old_threshold"];
 
-        // anti_spin_max_r_multiple = (double)fs["anti_spin_max_r_multiple"];
-        // anti_spin_judge_low_thres = (int)fs["anti_spin_judge_low_thres"];
-        // anti_spin_judge_high_thres = (int)fs["anti_spin_judge_high_thres"];
-        // max_delta_t = (int)fs["max_delta_t"];
-        // max_delta_dist = (int)fs["max_delta_dist"];
-
-        // isChangeSameID = false;
         fs.release();
     }
 
     void ArmorTracker::reset()
     {
-        // TODO: 这里的t和wait_start怎么用
         t=-1;
-        // pitch = 0;
-        // yaw = 0;
 
         KF.initial_KF();
         Singer.Reset();
@@ -56,20 +46,6 @@ namespace robot_detection {
         tracking_id = 0;
         find_aim_cnt = 0;
         lost_aim_cnt = 0;
-    }
-
-    // count IoU
-    double ArmorTracker::countArmorIoU(Armor armor1, Armor armor2)
-    {
-        double area1 = armor1.size.area();
-        double area2 = armor2.size.area();
-
-        std::vector<cv::Point2f> cross_points;
-        cv::rotatedRectangleIntersection(armor1, armor2, cross_points);
-
-        double area3 = cv::contourArea(cross_points);
-
-        return (area3) / (area1 + area2 - area3);
     }
 
     // 初始化，选择最优装甲板，设置卡尔曼的F和x_1，当没有目标时返回false，选一个最优目标返回true
@@ -90,10 +66,10 @@ namespace robot_detection {
 
         // initial KF --- x_post
         KF.initial_KF();
-        enemy_armor.world_position = AS.pixel2imu(enemy_armor,1);
+        enemy_armor.world_position = AS.pixel2imu(enemy_armor);
         KF.setXPost(enemy_armor.world_position);
         // TODO: 这里用的是x和y是水平面的,顺序和数据是否正确
-        Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(2,0)});
+        Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(1,0)});
         // std::cout<<enemy_armor.camera_position.norm()<<"     "<<enemy_armor.world_position.norm()<<std::endl;
         // std::cout<<"enemy_armor.camera_position:  "<<enemy_armor.camera_position.transpose()<<std::endl;
         // std::cout<<AS.ab_roll<<"     "<<AS.ab_pitch<<"     "<<AS.ab_yaw<<std::endl;
@@ -132,7 +108,7 @@ namespace robot_detection {
             double min_position_diff = DBL_MAX;
             for(auto & armor : find_armors)
             {
-                armor.world_position = AS.pixel2imu(armor,1);
+                armor.world_position = AS.pixel2imu(armor);
                 Eigen::Vector3d pre = predicted_enemy.head(3);
                 double position_diff = (pre - armor.world_position).norm();
 
@@ -149,9 +125,7 @@ namespace robot_detection {
             {
                 // std::cout<<"yes"<<std::endl;
                 matched = true;
-                // TODO: 检测值两个点是否有差异
-                Eigen::Vector3d position_vec = AS.pixel2imu(matched_armor,1);
-                predicted_enemy = KF.update(position_vec);
+                predicted_enemy = KF.update(matched_armor.world_position);
             }
             else
             {
@@ -182,26 +156,6 @@ namespace robot_detection {
 
         if (matched)
         {
-
-#ifdef DRAW_MATCH_ARMOR
-            // matched armor center  青色
-            cv::circle(m_a,matched_armor.center,matched_armor.size.width/15,cv::Scalar(255,255,0),-1);
-            // after update  黄色
-            cv::Point2f p = AS.imu2pixel(predicted_enemy.head(3));
-            cv::circle(m_a,p,matched_armor.size.width/20,cv::Scalar(0,255,255),-1);
-            cv::Point2f vertice_lights[4];
-            matched_armor.points(vertice_lights);
-            for (int i = 0; i < 4; i++) {
-                line(m_a, vertice_lights[i], vertice_lights[(i + 1) % 4], CV_RGB(0, 255, 255),2,cv::LINE_8);
-            }
-            cv::putText(m_a,std::to_string(matched_armor.camera_position.norm())+"m",matched_armor.armor_pt4[3],cv::FONT_HERSHEY_COMPLEX,2.0,cv::Scalar(0,255,255),2,8);
-
-            cv::imshow("DRAW_MATCH_ARMOR",m_a);
-#endif
-            // std::cout<<"enemy_armor_cam: "<<matched_armor.camera_position.transpose()<<std::endl;
-            // std::cout<<"enemy_armor_imu: "<<matched_armor.world_position.transpose()<<std::endl;
-            // std::cout<<"predicted_enemy: "<<predicted_enemy.transpose()<<std::endl;
-            // std::cout<<"P: \n"<<KF.P<<std::endl;
             enemy_armor = matched_armor;
         }
         // predicted_position = predicted_enemy.head(3);
@@ -280,6 +234,8 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
+                // TODO: count error nums
+                std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
                 // return false;
             }
             ////////////////Singer predictor//////////////////////////////
@@ -293,6 +249,8 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
+                // TODO: count error nums
+                std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
                 // return false;
             }
             ////////////////Singer predictor//////////////////////////////
@@ -349,31 +307,10 @@ namespace robot_detection {
                 return false;
             }
 
-            // TODO: 封装一个计算角度的函数
-            bullet_point = AS.airResistanceSolve(predicted_position);
-
-            cv::Point2f bullet_drop = AS.imu2pixel(bullet_point);
-#ifdef DRAW_BULLET_POINT
-            cv::Mat bullet = _src.clone();
-            cv::circle(bullet,bullet_drop,enemy_armor.size.width/15.0,cv::Scalar(127,255,0),-1);
-            cv::circle(bullet,enemy_armor.center,5,cv::Scalar(255,0,0),-1);
-            cv::imshow("DRAW_BULLET_POINT",bullet);
-#endif
-
-            Eigen::Vector3d rpy = AS.yawPitchSolve(bullet_point);
+            Eigen::Vector3d rpy = AS.getAngle(predicted_position);    
             pitch = rpy[1];
             yaw   = rpy[2];
-            // 没有预测的角度计算
-            // pitch = atan2(enemy_armor.world_position[2],enemy_armor.world_position[1])/ CV_PI*180.0;
-            // yaw   = -atan2(enemy_armor.world_position[0],enemy_armor.world_position[1])/ CV_PI*180.0;
 
-            // std::cout<<"------------------------gimbal_angles------------------------"<<std::endl;
-            // std::cout<<"delta_pitch: "<< -atan2(bullet_point[1],bullet_point[2])/CV_PI*180  <<std::endl;
-            // std::cout<<"delta_yaw  : "<< -atan2(bullet_point[0],bullet_point[2])/CV_PI*180  <<std::endl;
-            // std::cout<<"------------send------------"<<std::endl;
-            // std::cout<<"---pitch: "<<pitch<<std::endl;
-            // std::cout<<"---yaw  : "<<yaw  <<std::endl;
-            // std::cout<<"-------------------------------------------------------------"<<std::endl;
             return true;
         }
 

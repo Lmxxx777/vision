@@ -5,7 +5,7 @@
 // #define DRAW_LIGHTS_RRT
 #define SHOW_NUMROI
 // #define ERROR_DETECTION
-// #define DRAW_ARMORS_RRT
+#define DRAW_ARMORS_RRT
 #define DRAW_FINAL_ARMOR_S_CLASS
 
 using namespace cv;
@@ -15,10 +15,10 @@ namespace robot_detection {
 
     ArmorDetector::ArmorDetector()
     {
-        cnt=0;
-
         FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
+        //enemy_color
+        enemy_color = COLOR(((string)fs["enemy_color"]));
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70
 
@@ -28,33 +28,31 @@ namespace robot_detection {
         light_max_hw_ratio = (double)fs["light_max_hw_ratio"];   // different distance and focus
         light_min_area_ratio = (double)fs["light_min_area_ratio"];   // contourArea / RotatedRect
         light_max_area_ratio = (double)fs["light_max_area_ratio"];
-        light_area_max = (double)fs["light_area_max"];
+        light_max_area = (double)fs["light_max_area"];
 
         //armor_judge_condition
         armor_big_max_wh_ratio = (double)fs["armor_big_max_wh_ratio"];
         armor_big_min_wh_ratio = (double)fs["armor_big_min_wh_ratio"];
         armor_small_max_wh_ratio = (double)fs["armor_small_max_wh_ratio"];
-        armor_small_min_wh_ratio = (double)fs["armor_small_min_wh_ratio"];//装甲板宽高比真的这么设吗
+        armor_small_min_wh_ratio = (double)fs["armor_small_min_wh_ratio"];
         armor_max_offset_angle = (double)fs["armor_max_offset_angle"];
         armor_height_offset = (double)fs["armor_height_offset"];
-        armor_ij_min_ratio = (double)fs["armor_ij_min_ratio"];
-        armor_ij_max_ratio = (double)fs["armor_ij_max_ratio"];
+        armor_min_ij_ratio = (double)fs["armor_min_ij_ratio"];
+        armor_max_ij_ratio = (double)fs["armor_max_ij_ratio"];
         armor_max_angle = (double)fs["armor_max_angle"];
 
         //armor_grade_condition
         near_standard = (double)fs["near_standard"];
         height_standard = (double)fs["armor_max_angle"];
+        grade_standard = (int)fs["grade_standard"]; // 及格分
 
         //armor_grade_project_ratio
         id_grade_ratio = (double)fs["id_grade_ratio"];
         near_grade_ratio = (double)fs["near_grade_ratio"];
         height_grade_ratio = (double)fs["height_grade_ratio"];
-        grade_standard = (int)fs["grade_standard"]; // 及格分
 
         //thresh_confidence
         thresh_confidence = (double)fs["thresh_confidence"];
-        //enemy_color
-        enemy_color = COLOR(((string)fs["enemy_color"]));
 
         fs.release();
     }
@@ -90,22 +88,24 @@ namespace robot_detection {
         //外接矩形面积和像素点面积之比条件
         double area_ratio =  contourArea(cnt) / (height * width);
         bool area_ratio_ok = light_min_area_ratio < area_ratio && area_ratio < light_max_area_ratio;
-//        area_ratio_ok = true;
+        // area_ratio_ok = true;
 
         //灯条角度条件
         bool angle_ok = fabs(90 - light.angle) <= light_max_angle;
         // cout<<"angle: "<<light.angle<<endl;
-//         angle_ok = true;
+        // angle_ok = true;
+
+        bool area_ok = contourArea(cnt) < light_max_area;
 
         //灯条判断的条件总集
-        bool is_light = hw_ratio_ok && area_ratio_ok && angle_ok && standing_ok;
+        bool is_light = hw_ratio_ok && area_ratio_ok && angle_ok && standing_ok && area_ok;
 
-//    if(!is_light)
-//    {
-//        cout<<hw_ratio<<"    "<<area_ratio<<"    "<<light.angle<<endl;
-//    }
+        // if(!is_light)
+        // {
+        //     cout<<hw_ratio<<"    "<<area_ratio<<"    "<<light.angle<<"   "<<contourArea(cnt)/light_max_area<<endl;
+        // }
 
-//        is_light = true;
+        // is_light = true;
         return is_light;
     }
 
@@ -136,7 +136,7 @@ namespace robot_detection {
 
             double contour_area = contourArea(contour);
 
-            if (isLight(light, contour) && contour_area < light_area_max)
+            if (isLight(light, contour))
             {
                 //cout<<"is_Light   "<<endl;
                 cv::Rect rect = r_rect.boundingRect();
@@ -168,7 +168,7 @@ namespace robot_detection {
 
                     // 颜色不符合电控发的就不放入
                     // 传入的电控颜色是color，文件读取的颜色是enemy_color
-                    if(light.lightColor == enemy_color)
+                    if(light.lightColor == 2)
                     {
                         candidateLights.emplace_back(light);
                     }
@@ -203,9 +203,6 @@ namespace robot_detection {
              [](RotatedRect& a1, RotatedRect& a2) {
                  return a1.center.x < a2.center.x; });
 
-        //for show
-        Mat armors_show = _src.clone();
-
         for (size_t i = 0; i < candidateLights.size() - 1; i++)
         {
             Light lightI = candidateLights[i];
@@ -220,7 +217,6 @@ namespace robot_detection {
                 double armor_ij_ratio = lightI.height / lightJ.height;
                 double armorAngle = atan2((centerI.y - centerJ.y),fabs(centerI.x - centerJ.x))/CV_PI*180.0;
 
-
                 //宽高比筛选条件
                 bool small_wh_ratio_ok = armor_small_min_wh_ratio < armorWidth/armorHeight && armorWidth/armorHeight < armor_small_max_wh_ratio;
                 bool big_wh_ratio_ok = armor_big_min_wh_ratio < armorWidth/armorHeight && armorWidth/armorHeight < armor_big_max_wh_ratio;
@@ -232,9 +228,8 @@ namespace robot_detection {
                 //左右亮灯条中心点高度差筛选条件
                 bool height_offset_ok = fabs(lightI.center.y - lightJ.center.y) / armorHeight < armor_height_offset;
 
-
                 //左右灯条的高度比
-                bool ij_ratio_ok = armor_ij_min_ratio < armor_ij_ratio && armor_ij_ratio < armor_ij_max_ratio;
+                bool ij_ratio_ok = armor_min_ij_ratio < armor_ij_ratio && armor_ij_ratio < armor_max_ij_ratio;
 
                 //候选装甲板角度筛选条件
                 bool angle_ok = fabs(armorAngle) < armor_max_angle;
@@ -261,7 +256,7 @@ namespace robot_detection {
 
                         if(small_wh_ratio_ok)
                             armor.type = SMALL;
-                        else
+                        else if(big_wh_ratio_ok)
                             armor.type = BIG;
 
                         candidateArmors.emplace_back(armor);
@@ -326,10 +321,6 @@ namespace robot_detection {
         else
         {
             //cout<<"get "<<candidateArmors.size()<<" target!!"<<endl;
-
-            sort(candidateArmors.begin(),candidateArmors.end(),
-                [](Armor &candidate1,Armor &candidate2){return candidate1.size.height > candidate2.size.height;});
-
             // 获取每个候选装甲板的id和type
 
             for(int i = 0; i < candidateArmors.size(); ++i) {

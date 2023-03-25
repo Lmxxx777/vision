@@ -23,11 +23,12 @@ namespace robot_detection {
             bottom = (p[2] + p[3]) / 2;
             height = POINT_DIST(top, bottom);
             width = POINT_DIST(p[0], p[1]);
+            // sentry
             angle = atan2(bottom.y-top.y, bottom.x-top.x) * 180 / CV_PI;
+            // infantry
             // angle = box.angle;
             // angle = top.x < bottom.x ? box.angle : 90 + box.angle;
             // if(fabs(bottom.x - top.x) <= 0.01) angle = 0;
-            //angle = atan2(fabs(centerI.y - centerJ.y),(centerI.x - centerJ.x));
         }
 
         int lightColor;
@@ -36,7 +37,6 @@ namespace robot_detection {
         double angle;
         double height;
         double width;
-
     };
 
 //装甲板结构体
@@ -58,7 +58,6 @@ namespace robot_detection {
         int type;  // 装甲板类型
         Eigen::Vector3d world_position;  // 当前的真实坐标
         Eigen::Vector3d camera_position;  // 当前的真实坐标
-//    int area;  // 装甲板面积
     };
 
 //主类
@@ -68,12 +67,9 @@ namespace robot_detection {
         ArmorDetector(); //构造函数初始化
 
         std::vector<Armor> autoAim(const cv::Mat &src, int color); //将最终目标的坐标转换到摄像头原大小的
-
-        int cnt;
-
     private:
         int binThresh;
-        int enemy_color = 0;
+        int enemy_color;
 
         //light_judge_condition
         double light_max_angle;
@@ -81,8 +77,7 @@ namespace robot_detection {
         double light_max_hw_ratio;   // different distance and focus
         double light_min_area_ratio;   // RotatedRect / Rect
         double light_max_area_ratio;
-        double light_area_max;
-
+        double light_max_area;
 
         //armor_judge_condition
         double armor_big_max_wh_ratio;
@@ -91,8 +86,8 @@ namespace robot_detection {
         double armor_small_min_wh_ratio;
         double armor_max_angle;
         double armor_height_offset;
-        double armor_ij_min_ratio;
-        double armor_ij_max_ratio;
+        double armor_min_ij_ratio;
+        double armor_max_ij_ratio;
         double armor_max_offset_angle;
 
         //armor_grade_condition
@@ -109,7 +104,6 @@ namespace robot_detection {
 
         cv::Mat _src;  // 裁剪src后的ROI
         cv::Mat _binary;
-        std::vector<cv::Mat> temps;
 
         Armor lastArmor;
 

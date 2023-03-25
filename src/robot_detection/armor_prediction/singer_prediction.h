@@ -38,8 +38,6 @@ namespace robot_detection {
         double error_distance;
 
         double T = 0;//采样周期T，即前后两次预测帧相隔的时间
-        double last_x1 = 0;
-        double last_x2 = 0;
         double last_x[2] = {0,0};
         Eigen::Vector3d predicted_xyz = {0,0,0};
         

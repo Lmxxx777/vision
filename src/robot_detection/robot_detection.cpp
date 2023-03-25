@@ -159,8 +159,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
     // ROS_INFO("mode         is  %x  \n", mode);
 
-    // Track.AS.quaternionToRotationMatrix(quaternion);
-
+    // TODO: enemy color set 
+    enemy_color = 2; 
     // detecting
     Targets = Detect.autoAim(src, enemy_color);
     if (!Targets.empty())
@@ -180,8 +180,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
  
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
     bool track_bool;
-    // track_bool= Track.locateEnemy(src,Targets,now_time);
-    track_bool = false;
+    track_bool= Track.locateEnemy(src,Targets,now_time);
+    // track_bool = false;  // for test...
     if(track_bool)
     {
         mode = 1;
@@ -215,9 +215,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_send_data.yaw = Track.AS.ab_yaw;
     }
 
-    // send port gimbal message
-    vision_pub_.publish(vision_send_data);    
-    
+    // send port gimbal message 
+    vision_pub_.publish(vision_send_data);  
     // send aim point in camera
     aim_point.header.frame_id = "camera";
     aim_point.header.seq++;
@@ -243,7 +242,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         cv::putText(src,"TRACKING  " + std::to_string(Track.tracking_id),cv::Point2f(1280 - 200,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
         break;
     }
-
 
     // show receive data on img's ru
     cv::putText(src,"p : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);

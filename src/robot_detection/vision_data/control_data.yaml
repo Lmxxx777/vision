@@ -14,7 +14,7 @@ buff_radius: 0.700
 buff_convex: 0.146
 
 
-self_type: omni_infantry
+self_type: balance_infantry
 
 omni_infantry:
   F_MAT: !!opencv-matrix
