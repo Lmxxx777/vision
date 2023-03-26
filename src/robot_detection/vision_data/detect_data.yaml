@@ -30,5 +30,5 @@ id_grade_ratio: 0.6
 near_grade_ratio: 0.2
 height_grade_ratio: 0.2
 # thresh_confidence
-thresh_confidence: 0.80
+thresh_confidence: 0.60
 categories: 9

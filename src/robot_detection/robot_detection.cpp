@@ -301,6 +301,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
+    cv::circle(src,cv::Point(640,512),5,cv::Scalar(150,100,255),-1);
+
     // show image
     cv::imshow("main-result-image", src);
     cv::waitKey(1);

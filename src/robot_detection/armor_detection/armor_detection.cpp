@@ -5,8 +5,8 @@
 // #define DRAW_LIGHTS_RRT
 #define SHOW_NUMROI
 // #define ERROR_DETECTION
-#define DRAW_ARMORS_RRT
-#define DRAW_FINAL_ARMOR_S_CLASS
+// #define DRAW_ARMORS_RRT
+// #define DRAW_FINAL_ARMOR_S_CLASS
 
 using namespace cv;
 using namespace std;
@@ -331,17 +331,6 @@ namespace robot_detection {
                     outs+=categories;
                     continue;
                 }
-#ifdef SHOW_NUMROI
-                cv::Mat numDst;
-                resize(numROIs[i],numDst,Size(200,300));
-                //        printf("%d",armor.id);
-                imshow("number_show",numDst);
-                //        std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
-                //        string file_name = "../data/"+std::to_string(0)+"_"+std::to_string(cnt_count)+".jpg";
-                //        cout<<file_name<<endl;
-                //        imwrite(file_name,numDst);
-                //        cnt_count++;
-#endif
                 // 装甲板中心点在屏幕中心部分，在中心部分中又是倾斜最小的，
                 // 如何避免频繁切换目标：缩小矩形框就是跟踪到了，一旦陀螺则会目标丢失，
                 // UI界面做数字选择，选几就是几号，可能在切换会麻烦，（不建议）
@@ -478,25 +467,25 @@ namespace robot_detection {
 
         return final_grade;
     }
-   
+
     void ArmorDetector::preImplement(Armor& armor)
     {
         Mat numDst;
         Mat num;
 
         // Light length in image
-        const int light_length = 14;//大致为高的一半
+        const int light_length = 14;
         // Image size after warp
+        const int small_armor_width = 32;
+        const int large_armor_width = 44;
         const int warp_height = 30;
-        const int small_armor_width = 32;//为48/3*2
-        const int large_armor_width = 44;//约为70/3*2
+        const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
         // Number ROI size
-        const cv::Size roi_size(20, 30);
+        const cv::Size roi_size(22, 30);
 
         const int top_light_y = (warp_height - light_length) / 2;
         const int bottom_light_y = top_light_y + light_length;
         //std::cout<<"type:"<<armor.type<<std::endl;
-        const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
 
         cv::Point2f target_vertices[4] = {
                 cv::Point(0, bottom_light_y),
@@ -508,20 +497,60 @@ namespace robot_detection {
         cv::warpPerspective(_src, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
 
         // Get ROI
+        // std::cout<<numDst.size()<<std::endl;
         numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
         dnnDetect.img_processing(numDst, numROIs);
-    #ifdef SHOW_TIME
-        auto start = std::chrono::high_resolution_clock::now();
-        dnn_detect(numDst, armor);
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = seconds_duration(end-start).count();
-        printf("dnn_time:%lf\n",duration);
-        putText(showSrc, to_string(duration),Point(10,100),2,3,Scalar(0,0,255));
-    #else
-    //	dnn_detect(numDst, armor);
-    #endif
-
+#ifdef SHOW_NUMROI
+        resize(numDst, numDst,Size(200,300));
+        cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
+        threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        string name = to_string(armor.id) + ":" + to_string(armor.confidence*100) + "%";
+        imshow("name", numDst);
+        // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+#endif
     }
+   
+//     void ArmorDetector::preImplement(Armor& armor)
+//     {
+//         Mat numDst;
+//         Mat num;
+
+//         // Light length in image
+//         const int light_length = 14;
+//         // Image size after warp
+//         const int small_armor_width = 24;
+//         const int large_armor_width = 56;
+//         const int warp_height = 30;
+//         const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
+//         // Number ROI size
+//         const cv::Size roi_size(20, 30);
+
+//         const int top_light_y = (warp_height - light_length) / 2;
+//         const int bottom_light_y = top_light_y + light_length;
+//         //std::cout<<"type:"<<armor.type<<std::endl;
+
+//         cv::Point2f target_vertices[4] = {
+//                 cv::Point(0, bottom_light_y),
+//                 cv::Point(warp_width, bottom_light_y),
+//                 cv::Point(warp_width, top_light_y),
+//                 cv::Point(0, top_light_y),
+//         };
+//         const Mat& rotation_matrix = cv::getPerspectiveTransform(armor.armor_pt4, target_vertices);
+//         cv::warpPerspective(_src, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
+
+//         // Get ROI
+//         // std::cout<<numDst.size()<<std::endl;
+//         numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
+//         dnnDetect.img_processing(numDst, numROIs);
+// #ifdef SHOW_NUMROI
+//         resize(numDst, numDst,Size(200,300));
+//         cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
+//         threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+//         string name = to_string(armor.id) + ":" + to_string(armor.confidence*100) + "%";
+//         imshow("name", numDst);
+//         // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+// #endif
+//     }
 
     bool ArmorDetector::get_max(const float *data, float &confidence, int &id)
     {
