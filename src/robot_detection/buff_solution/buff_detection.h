@@ -56,13 +56,17 @@ namespace robot_detection
     public:
         BuffDetector();
         void reset();
-        bool detectRsult(const cv::Mat src);
+        bool detectResult(const cv::Mat src, chrono_time now_time);
 
         // 0：R未找到，1：找一对括号，2：已经击中一个，5：差最后一个
         int state;
-        bool isSmallBuff;
-        bool isClockwise;
         double scale_ratio;     // 检测到的坐标和实际坐标的比例缩放
+        bool isSmallBuff;
+        int buff_type;
+        bool isClockwise;
+        int rotate_direction;   // 1表示顺时针，-1表示逆时针
+        double rotate_speed;
+        bool isChange;
 
         AngleSolve AS;
         bool isInitYaw;
@@ -99,16 +103,17 @@ namespace robot_detection
 
         // Buff_components
         std::vector<cv::RotatedRect> components_rrt;
+        void redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt);
         bool findComponents();
         bool matchComponents();
 
         //Buff calculation
-        void redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt);
         bool calculateBuffPosition();
         double last_angle;
         Eigen::Vector3d last_vector;
+        chrono_time last_time;
         bool isFirstCalculate;
-        bool calculateRotateDirectionAndSpeed();
+        bool calculateRotateDirectionAndSpeed(chrono_time now_time);
 
         // Buff_no
         Buff_no buff_no;
@@ -123,15 +128,6 @@ namespace robot_detection
         double yes_buff_area_min;
         double yes_full_ratio_min;
         double yes_full_ratio_max;
-
-
-
-
-
-
-
-
-
     };
 
 }

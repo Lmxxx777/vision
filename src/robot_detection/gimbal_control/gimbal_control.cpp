@@ -72,6 +72,10 @@ namespace robot_detection{
                     { w / 2 ,  h / 2, 0.},
                     {-w / 2 ,  h / 2, 0.}
             };
+            pu.push_back(p[3]);
+            pu.push_back(p[2]);
+            pu.push_back(p[1]);
+            pu.push_back(p[0]);
         }
         else if(type == BIG)
         {
@@ -83,6 +87,10 @@ namespace robot_detection{
                     { w / 2 ,  h / 2, 0.},
                     {-w / 2 ,  h / 2, 0.}
             };
+            pu.push_back(p[3]);
+            pu.push_back(p[2]);
+            pu.push_back(p[1]);
+            pu.push_back(p[0]); 
         }
         else if(type == BUFF_R)
         {
@@ -94,6 +102,10 @@ namespace robot_detection{
                     { w / 2 ,  h / 2, 0.},
                     {-w / 2 ,  h / 2, 0.}
             };
+            pu.push_back(p[0]);
+            pu.push_back(p[1]);
+            pu.push_back(p[2]);
+            pu.push_back(p[3]);
         }
         else if(type == BUFF_NO)
         {
@@ -104,24 +116,27 @@ namespace robot_detection{
                     {-buff_in_w / 2 ,  buff_in_h , 0.},
                     {0 , buff_radius, -buff_convex},
             };
+            pu.push_back(p[0]);
+            pu.push_back(p[1]);
+            pu.push_back(p[2]);
+            pu.push_back(p[3]);
             pu.push_back(p[4]);
         }
         else if(type == BUFF_YES)
         {
-            double w = small_w;
-            double h = small_h;
             ps = {
-                    {-w / 2 , -h / 2, 0.},
-                    { w / 2 , -h / 2, 0.},
-                    { w / 2 ,  h / 2, 0.},
-                    {-w / 2 ,  h / 2, 0.}
+                    {-buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_in_w / 2 ,  buff_in_h , 0.},
+                    {-buff_in_w / 2 ,  buff_in_h , 0.},
+                    {0 , buff_radius, -buff_convex},
             };
+            pu.push_back(p[0]);
+            pu.push_back(p[1]);
+            pu.push_back(p[2]);
+            pu.push_back(p[3]);
+            pu.push_back(p[4]);
         }
-
-        pu.push_back(p[3]);
-        pu.push_back(p[2]);
-        pu.push_back(p[1]);
-        pu.push_back(p[0]);
 
         cv::Mat rvec;
         cv::Mat tvec;

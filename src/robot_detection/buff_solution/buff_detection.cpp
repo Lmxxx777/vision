@@ -8,11 +8,7 @@ namespace robot_detection
     BuffDetector::BuffDetector()
     {
         state = 0;
-
-        isSmallBuff = false;
-        isClockwise = false;
         isInitYaw = false;
-        isFirstCalculate = false;
 
         cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", cv::FileStorage::READ);
 
@@ -42,11 +38,14 @@ namespace robot_detection
         yes_full_ratio_min = (double)fs["yes_full_ratio_min"]; 
         yes_full_ratio_max = (double)fs["yes_full_ratio_max"]; 
 
-
         fs.release();
 
         // TODO: need to define buff_color 
         buff_color = BLUE;
+
+        isSmallBuff = false;
+        isClockwise = false;
+        isFirstCalculate = false;
     }
 
     void BuffDetector::reset()
@@ -54,7 +53,7 @@ namespace robot_detection
 
     }
 
-    bool BuffDetector::detectRsult(const cv::Mat src)
+    bool BuffDetector::detectResult(const cv::Mat src, chrono_time now_time)
     {
         if(!isInitYaw)
         {
@@ -80,14 +79,8 @@ namespace robot_detection
             {
                 matchComponents();
             }
-            if(!calculateBuffPosition())
-            {
-                return false;
-            }
-            if(!calculateRotateDirectionAndSpeed())
-            {
-                return false;
-            }
+            calculateBuffPosition();
+            calculateRotateDirectionAndSpeed(now_time);
 
             
         }
@@ -193,7 +186,7 @@ namespace robot_detection
             cv::Rect r_rt = cv::boundingRect(r_contours[i]);
             double full_ratio = r_area / (r_rt.height * r_rt.width);
             double square_ratio = r_rt.height / r_rt.width;
-            // RRT ------ 暂时  弃用  ，选择RT方案，如需变回，取消注释即可
+            // RRT ------ 暂时弃用------选择RT方案，如需变回，取消注释即可
             // cv::RotatedRect r_rrt = cv::minAreaRect(r_contours[i]);
             // double full_ratio = r_area / (r_rrt.size.height * r_rrt.size.width);
             // double square_ratio = r_rrt.size.height / r_rrt.size.width;
@@ -221,7 +214,6 @@ namespace robot_detection
                     // redefineRotatedRectPoints(pts,r_rrt);
                     // for(int index = 0; index < 4; index++)
                     //     r_center.points_4[index] = pts[index];
-
 
                     r_center.imu_position = AS.pixel2imu(r_center.points_4, BUFF_R); 
                     r_center.buff_position = AS.imu2buff(r_center.imu_position); 
@@ -304,8 +296,8 @@ namespace robot_detection
                     components_rrt.emplace_back(buff_rrt);
             }
 
-            // TODO: 讨论识别它的必要性，多加一点拟合用的数据
-            // buff_yes
+            // // TODO: 讨论识别它的必要性，多加一点拟合用的数据
+            // // buff_yes
             // bool yes_area_ok = (buff_area < yes_buff_area_max) && (buff_area > yes_buff_area_min) ? true : false;
             // bool yes_full_ratio_ok = (full_ratio < yes_full_ratio_max) && (full_ratio > yes_full_ratio_min) ? true : false;
             // bool yes_is_like_rectangle = (rectangle_ratio < 1.3) && (rectangle_ratio > 1.2) ? true : false;
@@ -366,59 +358,87 @@ namespace robot_detection
         cv::Point2f in_rrt_pts[4];
 	    buff_no.in_rrt.points(in_rrt_pts);
 
-        // TODO: 评估和实测下面两种方法的效果，理论上来说后一个会好一点，但是怕有特殊情况
+        // // 通过约束来确定，不管输入顺序是否有影响（已经弃用）
+        // // out_rrt
+        // int s1 = INT_MAX, s2 = INT_MAX; // s1存储最小值，s2存储第二小值
+        // int s_idx1 = 0, s_idx2 = 1;
+        // for (int i = 0; i < 4; ++i)
+        // {
+        //     double dis = POINT_DIST(out_rrt_pts[i],r_center.pixel_position);
+        //     if (dis < s1)
+        //     {
+        //         s2 = s1;
+        //         s1 = dis;
+        //         s_idx1 = i;
+        //     }
+        //     else if (dis < s2)
+        //     {
+        //         s2 = dis;
+        //         s_idx2 = i;
+        //     }
+        // }
+        // // in_rrt
+        // int b1 = 0, b2 = 0; // b1存储最大值，b2存储第二大值
+        // int b_idx1 = 0, b_idx2 = 1;
+        // for (int i = 0; i < 4; ++i)
+        // {
+        //     double dis = POINT_DIST(in_rrt_pts[i],r_center.pixel_position);
+        //     if (dis > b1)
+        //     {
+        //         b2 = b1;
+        //         b1 = dis;
+        //         b_idx1 = i;
+        //     }
+        //     else if (dis > b2)
+        //     {
+        //         b2 = dis;
+        //         b_idx2 = i;
+        //     }
+        // }
 
-        // 通过约束来确定，不管输入顺序是否有影响
-        // out_rrt
-        int s1 = INT_MAX, s2 = INT_MAX; // s1存储最小值，s2存储第二小值
-        int s_idx1 = 0, s_idx2 = 1;
-        for (int i = 0; i < 4; ++i)
-        {
-            double dis = POINT_DIST(out_rrt_pts[i],r_center.pixel_position);
-            if (dis < s1)
-            {
-                s2 = s1;
-                s1 = dis;
-                s_idx1 = i;
-            }
-            else if (dis < s2)
-            {
-                s2 = dis;
-                s_idx2 = i;
-            }
-        }
-        // in_rrt
-        int b1 = 0, b2 = 0; // b1存储最大值，b2存储第二大值
-        int b_idx1 = 0, b_idx2 = 1;
-        for (int i = 0; i < 4; ++i)
-        {
-            double dis = POINT_DIST(in_rrt_pts[i],r_center.pixel_position);
-            if (dis > b1)
-            {
-                b2 = b1;
-                b1 = dis;
-                b_idx1 = i;
-            }
-            else if (dis > b2)
-            {
-                b2 = dis;
-                b_idx2 = i;
-            }
-        }
-
-        buff_no.points_5[0] = out_rrt_pts[0];
-        buff_no.points_5[1] = out_rrt_pts[1];
-        buff_no.points_5[2] = in_rrt_pts[1];
-        buff_no.points_5[3] = in_rrt_pts[0];
-        buff_no.points_5[4] = r_center.pixel_position;
+        // buff_no.points_5[0] = out_rrt_pts[0];
+        // buff_no.points_5[1] = out_rrt_pts[1];
+        // buff_no.points_5[2] = in_rrt_pts[1];
+        // buff_no.points_5[3] = in_rrt_pts[0];
+        // buff_no.points_5[4] = r_center.pixel_position;
 
         // 通过规定顺序来确定五点
         redefineRotatedRectPoints(out_rrt_pts,buff_no.out_rrt);
         redefineRotatedRectPoints(in_rrt_pts,buff_no.in_rrt);
-        buff_no.points_5[0] = out_rrt_pts[0];
-        buff_no.points_5[1] = out_rrt_pts[1];
-        buff_no.points_5[2] = in_rrt_pts[1];
-        buff_no.points_5[3] = in_rrt_pts[0];
+        // buff坐标系下规定，从x正方向旋转一周为0~360，用这个计算角度差值是有问题的  
+        double angle = atan2((buff_no.buff_position[2] - r_center.buff_position[2]),(buff_no.buff_position[0] - r_center.buff_position[0]));
+        angle = angle / CV_PI * 180;
+        if(angle<0)
+            angle += 360;
+        // 确定五点的输入顺序
+        if(angle>45 && angle<=135)
+        {
+            buff_no.points_5[0] = out_rrt_pts[0];
+            buff_no.points_5[1] = out_rrt_pts[3];
+            buff_no.points_5[2] = in_rrt_pts[2];
+            buff_no.points_5[3] = in_rrt_pts[1];
+        }
+        else if(angle>135 && angle<=225)
+        {
+            buff_no.points_5[0] = out_rrt_pts[3];
+            buff_no.points_5[1] = out_rrt_pts[2];
+            buff_no.points_5[2] = in_rrt_pts[1];
+            buff_no.points_5[3] = in_rrt_pts[0];
+        }
+        else if(angle>225 && angle<=315)
+        {
+            buff_no.points_5[0] = out_rrt_pts[2];
+            buff_no.points_5[1] = out_rrt_pts[1];
+            buff_no.points_5[2] = in_rrt_pts[0];
+            buff_no.points_5[3] = in_rrt_pts[3];
+        }
+        else
+        {
+            buff_no.points_5[0] = out_rrt_pts[1];
+            buff_no.points_5[1] = out_rrt_pts[0];
+            buff_no.points_5[2] = in_rrt_pts[3];
+            buff_no.points_5[3] = in_rrt_pts[2];
+        }
         buff_no.points_5[4] = r_center.pixel_position;
 
         // 未击打大符坐标计算
@@ -429,54 +449,38 @@ namespace robot_detection
     }
 
     // 最简单的就是让操作手输入旋转方向，不行就自己计算旋转方向，靠向量的叉乘计算    采用余弦定理可以计算帧与帧之间的旋转角度
-    bool BuffDetector::calculateRotateDirectionAndSpeed()
+    bool BuffDetector::calculateRotateDirectionAndSpeed(chrono_time now_time)
     {
-        // TODO: 有待改进
-        // 在buff坐标系下规定，从x正方向旋转一周为0~360，用这个计算角度差值是有问题的
-        double angle = atan2((buff_no.buff_position[2] - r_center.buff_position[2]),(buff_no.buff_position[0] - r_center.buff_position[0]));
-        angle = angle / CV_PI * 180;
-        if(angle<0)
-            angle += 360;
-        
-        if(!isFirstCalculate)
-        {
-            last_angle = angle;
-        }
-        else
-        {
-            if(angle-last_angle<0)
-            {
-                isClockwise = false;
-                last_angle = angle;
-            }
-            else
-            {
-                isClockwise = true;
-                last_angle = angle;
-            }
-        }
-
         // 向量的叉乘计算
         Eigen::Vector3d now_vector;
         if(!isFirstCalculate)
         {
             last_vector = buff_no.buff_position - r_center.buff_position;
+            last_time = now_time;
+            
+            return false;
         }
         else
         {
             now_vector = buff_no.buff_position - r_center.buff_position;
 
+            // delta_angle
+            double numerator = last_vector.norm()*last_vector.norm() + now_vector.norm()*now_vector.norm() - (now_vector - last_vector).norm()*(now_vector - last_vector).norm();
+            double denominator = 2 * last_vector.norm() * now_vector.norm();
+            double cos_delta_angle =  numerator / denominator;
+            double delta_angle = acos(cos_delta_angle) * 180.0 / CV_PI;
+            // delta_time
+            double delta_time = seconds_duration(now_time - last_time).count();
+
+            // calculate rotate speed
+            rotate_speed = delta_angle / delta_time;
 
             last_vector = now_vector;
+            last_time = now_time;
+            return true;
         }
-
-        double numerator = last_vector.norm()*last_vector.norm() + now_vector.norm()*now_vector.norm() - (now_vector - last_vector).norm()*(now_vector - last_vector).norm();
-        double denominator = 2 * last_vector.norm() * now_vector.norm();
-        double cos_delta_angle =  numerator / denominator;
-        double delta_angle = acos(cos_delta_angle) * 180.0 / CV_PI;
-
-        
     }
+
     
     
 }

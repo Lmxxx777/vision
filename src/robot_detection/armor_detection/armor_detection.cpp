@@ -15,6 +15,7 @@ namespace robot_detection {
 
     ArmorDetector::ArmorDetector()
     {
+        save_num_cnt = 0;
         FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
 
         //enemy_color
@@ -501,6 +502,18 @@ namespace robot_detection {
         numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
         dnnDetect.img_processing(numDst, numROIs);
 #ifdef SHOW_NUMROI
+        // save number roi
+        // int c = waitKey(100);
+        // cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
+        // threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        // string nn= std::to_string(save_num_cnt);
+        // string path="/home/lmx2/data_list/"+nn+".jpg";
+        // if(c==113){
+
+        //     imwrite(path,numDst);
+        //     save_num_cnt++;
+        // }
+
         resize(numDst, numDst,Size(200,300));
         cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
         threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
@@ -509,48 +522,6 @@ namespace robot_detection {
         // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
 #endif
     }
-   
-//     void ArmorDetector::preImplement(Armor& armor)
-//     {
-//         Mat numDst;
-//         Mat num;
-
-//         // Light length in image
-//         const int light_length = 14;
-//         // Image size after warp
-//         const int small_armor_width = 24;
-//         const int large_armor_width = 56;
-//         const int warp_height = 30;
-//         const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
-//         // Number ROI size
-//         const cv::Size roi_size(20, 30);
-
-//         const int top_light_y = (warp_height - light_length) / 2;
-//         const int bottom_light_y = top_light_y + light_length;
-//         //std::cout<<"type:"<<armor.type<<std::endl;
-
-//         cv::Point2f target_vertices[4] = {
-//                 cv::Point(0, bottom_light_y),
-//                 cv::Point(warp_width, bottom_light_y),
-//                 cv::Point(warp_width, top_light_y),
-//                 cv::Point(0, top_light_y),
-//         };
-//         const Mat& rotation_matrix = cv::getPerspectiveTransform(armor.armor_pt4, target_vertices);
-//         cv::warpPerspective(_src, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
-
-//         // Get ROI
-//         // std::cout<<numDst.size()<<std::endl;
-//         numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
-//         dnnDetect.img_processing(numDst, numROIs);
-// #ifdef SHOW_NUMROI
-//         resize(numDst, numDst,Size(200,300));
-//         cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
-//         threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-//         string name = to_string(armor.id) + ":" + to_string(armor.confidence*100) + "%";
-//         imshow("name", numDst);
-//         // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
-// #endif
-//     }
 
     bool ArmorDetector::get_max(const float *data, float &confidence, int &id)
     {

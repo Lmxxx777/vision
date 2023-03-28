@@ -1,24 +1,34 @@
 {
   "configurations": [
-      {
-          "browse": {
-              "databaseFilename": "${default}",
-              "limitSymbolsToIncludedHeaders": false
-          },
-          "includePath": [
-              "/home/lmx2/vision_ws_2/devel/include/**",
-              "/opt/ros/noetic/include/**",
-              "/home/lmx2/vision_ws_2/src/usb_cam/include/**",
-              "/home/lmx2/vision_ws_2/src/armor_detection/include/**",
-              "/usr/include/**",
-              "/opt/ros/noetic/include"
-          ],
-          "name": "ROS",
-          "intelliSenseMode": "gcc-x64",
-          "compilerPath": "/usr/bin/gcc",
-          "cStandard": "gnu11",
-          "cppStandard": "c++14"
-      }
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/lmx2/vision_ws_2/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        
+        "/home/lmx2/vision_ws_2/src/fdilink_ahrs/include/**",
+        "/home/lmx2/vision_ws_2/src/simple_robot/include/**",
+
+        "/home/lmx2/vision_ws_2/src/robot_detection/armor_detection/**",
+        "/home/lmx2/vision_ws_2/src/robot_detection/armor_prediction/**",
+        "/home/lmx2/vision_ws_2/src/robot_detection/armor_track/**",
+        "/home/lmx2/vision_ws_2/src/robot_detection/gimbal_control/**",
+        "/home/lmx2/vision_ws_2/src/robot_detection/number_DNN/**",
+        "/home/lmx2/vision_ws_2/src/robot_detection/robot_status/**",
+
+        "/home/lmx2/vision_ws_2/src/robot_detection/buff_solution/**",
+
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
   ],
   "version": 4
 }

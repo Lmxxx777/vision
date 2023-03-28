@@ -64,8 +64,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     ros::Time begin = ros::Time::now();
 
     // begin for predict
-    double now_time = (double)cv::getTickCount();
-    // robot_detection::chrono_time t;
+    robot_detection::chrono_time now_time = std::chrono::high_resolution_clock::now();
 
     // camera
     src = cv_bridge::toCvCopy(src_msg, "bgr8")->image;
@@ -98,7 +97,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     buff_detection.AS.quaternionToRotationMatrix(quaternion);
 
     // buff-detecting
-    buff_detection.detectRsult(src);
+    buff_detection.detectResult(src, now_time);
 
 
     // Time

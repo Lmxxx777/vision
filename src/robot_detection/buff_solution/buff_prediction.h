@@ -8,10 +8,8 @@ namespace robot_detection {
     class BuffPredictor
     {
     public:
+        
 
-        int buff_type;
-        int rotate_direction;
-        double rotate_speed;
 
 
 

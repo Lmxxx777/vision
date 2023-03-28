@@ -72,6 +72,8 @@ namespace robot_detection {
         int enemy_color;
         int categories;
 
+        int save_num_cnt;
+
         //light_judge_condition
         double light_max_angle;
         double light_min_hw_ratio;

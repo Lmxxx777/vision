@@ -179,7 +179,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     geometry_msgs::PointStamped aim_point;
  
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
-    bool track_bool;
+    bool track_bool = false;
 
     // 不开自瞄一直重置跟踪器
     bool is_need_reset = mode != 0x31 ? true : false;
