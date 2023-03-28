@@ -2,10 +2,12 @@
 ---
 # image
 binary_threshold: 
-enemy_color: 
+buff_color: 
 
 # R
 fit_circle_counts: 
+r_actual_distance: 
+error_range: 
 r_max_area: 
 r_min_area: 
 r_full_ratio_min: 

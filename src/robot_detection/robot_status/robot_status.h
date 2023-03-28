@@ -19,6 +19,7 @@ namespace robot_detection {
     //robot basic classes
     enum EnemyColor { RED = 1, BLUE = 2 };
     enum EnemyType  { SMALL = 1, BIG = 2, BUFF_R = 3, BUFF_NO = 4, BUFF_YES = 5};
+    enum BuffRotate { COLOCKWISE = 1, ANTI_COLOCKWISE = 2};
 
     //robot state information from electronic control group
     class robot_state

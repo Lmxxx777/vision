@@ -254,13 +254,13 @@ namespace robot_detection{
 
     Eigen::Vector3d AngleSolve::imu2buff(Eigen::Vector3d imu_pos)
     {
-        Eigen::Vector3d buff_pos = RotationMatrix_imu2buff * imu_pos;
+        Eigen::Vector3d buff_pos = RotationMatrix_imu2buff.inverse() * imu_pos;
         return buff_pos;
     }
 
     Eigen::Vector3d AngleSolve::buff2imu(Eigen::Vector3d buff_pos)
     {
-        Eigen::Vector3d imu_pos = RotationMatrix_imu2buff.inverse() * buff_pos;
+        Eigen::Vector3d imu_pos = RotationMatrix_imu2buff * buff_pos;
         return imu_pos;
     }
 

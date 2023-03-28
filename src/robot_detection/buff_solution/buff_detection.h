@@ -12,12 +12,17 @@ namespace robot_detection
     // R标
     struct R_center
     {
-        cv::RotatedRect rotatedrect;
-        Eigen::Vector3d imu_position;
-        Eigen::Vector3d cam_position;
         cv::Point2f pixel_position;
         cv::Point2f  points_4[4];
-        std::vector<Eigen::Vector3d> vec_points;
+        cv::RotatedRect rotatedrect;
+        cv::Rect rect;
+        double radius;
+        double distance;
+        Eigen::Vector3d buff_position;
+        Eigen::Vector3d imu_position;
+        Eigen::Vector3d cam_position;
+        std::vector<Eigen::Vector3d> points_3d;
+        std::vector<cv::Point2f> points_2d;
         R_center() = default;
     };
 
@@ -26,6 +31,7 @@ namespace robot_detection
     {
         cv::RotatedRect in_rrt;
         cv::RotatedRect out_rrt;
+        Eigen::Vector3d buff_position;
         Eigen::Vector3d imu_position;
         Eigen::Vector3d cam_position;
         cv::Point2f pixel_position;
@@ -56,6 +62,7 @@ namespace robot_detection
         int state;
         bool isSmallBuff;
         bool isClockwise;
+        double scale_ratio;     // 检测到的坐标和实际坐标的比例缩放
 
         AngleSolve AS;
         bool isInitYaw;
@@ -65,7 +72,7 @@ namespace robot_detection
         cv::Mat _src;
         cv::Mat _binary;
         int binary_threshold;
-        int enemy_color;
+        int buff_color;
         std::vector<std::vector<cv::Point2f>> all_contours;
 	    std::vector<cv::Vec4i> all_hierarchy;
         std::vector<std::vector<cv::Point2f>> r_contours;
@@ -78,14 +85,17 @@ namespace robot_detection
 
         // R
         bool isFindR;
-        R_center r_center;      // TODO: 是否需要做成vector来拟合圆心
+        R_center r_center;      
         int fit_circle_counts;
+        double r_actual_distance;       // 场地测量的实际距离 
+        double error_range;             // 真实的和测量的误差 ±
         double r_max_area;
         double r_min_area;
         double r_full_ratio_min;
         double r_full_ratio_max;
         bool findRcenter();
         bool fitCircle();
+        bool calculateScaleRatio();
 
         // Buff_components
         std::vector<cv::RotatedRect> components_rrt;
@@ -96,7 +106,9 @@ namespace robot_detection
         void redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt);
         bool calculateBuffPosition();
         double last_angle;
-        bool isRotateClockwise();
+        Eigen::Vector3d last_vector;
+        bool isFirstCalculate;
+        bool calculateRotateDirectionAndSpeed();
 
         // Buff_no
         Buff_no buff_no;

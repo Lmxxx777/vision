@@ -4,6 +4,7 @@
     name="mv_camera_pub" 
     pkg="mv_camera" 
     type="mv_camera" 
+    respawn="true"
     >
     <remap from="/mv_camera_pub/image_raw" to="/image_raw" />
   </node>
@@ -12,6 +13,7 @@
     name="simple_robot" 
     pkg="simple_robot" 
     type="simple_robot" 
+    respawn="true"
     > 
   </node>
 
@@ -20,6 +22,7 @@
     pkg="robot_detection" 
     type="robot_detection" 
     output="screen"
+    respawn="true"
     > 
   </node>
   

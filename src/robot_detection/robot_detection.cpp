@@ -159,7 +159,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
     // ROS_INFO("mode         is  %x  \n", mode);
 
-    // TODO: enemy color set 
+    // TODO: enemy color set 1-RED 2-BLUE
     enemy_color = 2; 
     // detecting
     Targets = Detect.autoAim(src, enemy_color);
@@ -180,8 +180,14 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
  
     Track.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
     bool track_bool;
+
+    // 不开自瞄一直重置跟踪器
+    bool is_need_reset = mode != 0x31 ? true : false;
+    if(is_need_reset)
+        Track.reset();
+
     track_bool= Track.locateEnemy(src,Targets,now_time);
-    // track_bool = false;  // for test...
+
     if(track_bool)
     {
         mode = 1;

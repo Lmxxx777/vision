@@ -7,19 +7,24 @@ namespace robot_detection
 {
     BuffDetector::BuffDetector()
     {
-        int state = 0;
-        bool isSmallBuff = false;
-        bool isClockwise = false;
-        bool isInitYaw = false;
+        state = 0;
+
+        isSmallBuff = false;
+        isClockwise = false;
+        isInitYaw = false;
+        isFirstCalculate = false;
+
         cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", cv::FileStorage::READ);
 
         //binary_thresh
         binary_threshold = (int)fs["binary_threshold"];   // blue 100  red  70
         //enemy_color
-        enemy_color = COLOR(((std::string)fs["enemy_color"]));
+        buff_color = COLOR(((std::string)fs["buff_color"]));
 
         // R
         fit_circle_counts = (int)fs["fit_circle_counts"]; 
+        r_actual_distance = (double)fs["r_actual_distance"];
+        error_range = (double)fs["error_range"];
         r_max_area = (double)fs["r_max_area"]; 
         r_min_area = (double)fs["r_min_area"]; 
         r_full_ratio_min = (double)fs["r_full_ratio_min"]; 
@@ -39,6 +44,9 @@ namespace robot_detection
 
 
         fs.release();
+
+        // TODO: need to define buff_color 
+        buff_color = BLUE;
     }
 
     void BuffDetector::reset()
@@ -63,6 +71,8 @@ namespace robot_detection
                 return false;
             if(!fitCircle())
                 return false;
+            if(!calculateScaleRatio())
+                return false;
         }
         else
         {
@@ -74,15 +84,18 @@ namespace robot_detection
             {
                 return false;
             }
+            if(!calculateRotateDirectionAndSpeed())
+            {
+                return false;
+            }
 
-            isRotateClockwise();
+            
         }
-
-
 
         return true;
     }
 
+    // 转过去正对着，就可以确定yaw了，把相机和枪口的垂直中线画到图传上
     bool BuffDetector::initYaw()
     {
         Eigen::Vector3d yaw = {0, 0, AS.ab_yaw};
@@ -94,7 +107,6 @@ namespace robot_detection
     {
         src.copyTo(_src);
 
-        //二值化
         cv::Mat gray;
         cv::cvtColor(_src,gray,cv::COLOR_BGR2GRAY);
         cv::threshold(gray,_binary,binary_threshold,255,cv::THRESH_BINARY);
@@ -110,11 +122,12 @@ namespace robot_detection
         cv::Mat buff_contour_src;
         _src.copyTo(buff_contour_src);
         for(int i=0;i< all_contours.size();i++)
-            cv::drawContours(buff_contour_src,all_contours,i,cv::Scalar(255,0,255),2,cv::LINE_8);
+            cv::drawContours(buff_contour_src,all_contours,i,cv::Scalar(0,255,255),2,cv::LINE_8);
         imshow("DRAW_BUFF_CONTOURS",buff_contour_src);
 #endif
     }      
 
+    // 工具函数：颜色判断，用于圆心和符叶组件
     bool BuffDetector::matchColor(std::vector<cv::Point2f> contour)
     {
         cv::RotatedRect rrt = cv::minAreaRect(contour);
@@ -137,13 +150,13 @@ namespace robot_detection
                 }
             }
             int color = sum_r > sum_b ? RED : BLUE;
-            if(color = 2)
+            if(color = buff_color)
                 return true;
         }
         return false;
     }
 
-    // 重新定义旋转矩形的点，左上角顺时针
+    // 工具函数：重新定义旋转矩形的点，左上角顺时针
     void BuffDetector::redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt)
     {
         rrt.points(p);
@@ -175,9 +188,15 @@ namespace robot_detection
         for(int i=0; i<r_contours.size(); ++i)
         {
             double r_area = cv::contourArea(r_contours[i]);
-            cv::RotatedRect r_rrt = cv::minAreaRect(r_contours[i]);
-            double full_ratio = r_area / (r_rrt.size.height * r_rrt.size.width);
-            double square_ratio = r_rrt.size.height / r_rrt.size.width;
+
+            //RT
+            cv::Rect r_rt = cv::boundingRect(r_contours[i]);
+            double full_ratio = r_area / (r_rt.height * r_rt.width);
+            double square_ratio = r_rt.height / r_rt.width;
+            // RRT ------ 暂时  弃用  ，选择RT方案，如需变回，取消注释即可
+            // cv::RotatedRect r_rrt = cv::minAreaRect(r_contours[i]);
+            // double full_ratio = r_area / (r_rrt.size.height * r_rrt.size.width);
+            // double square_ratio = r_rrt.size.height / r_rrt.size.width;
 
             bool area_ok = (r_area < r_max_area) && (r_area > r_min_area) ? true : false;
             bool contour_ok = (r_hierarchy[i][2] == -1 && r_hierarchy[i][3] == -1) ? true : false;
@@ -190,15 +209,35 @@ namespace robot_detection
                 bool is_color_ok = matchColor(r_contours[i]);
                 if(is_color_ok)
                 {
-                    r_center.rotatedrect = r_rrt;
-                    cv::Point2f pts[4];
-                    redefineRotatedRectPoints(pts,r_rrt);
-                    for(int index = 0; index < 4; index++)
-                        r_center.points_4[index] = pts[index];
-                    r_center.imu_position = AS.imu2buff(AS.pixel2imu(r_center.points_4, BUFF_R));
-                    r_center.vec_points.emplace_back(r_center.imu_position);
-                    r_center.pixel_position = r_rrt.center;
-                    return true;
+                    // RT
+                    r_center.rect = r_rt;
+                    r_center.points_4[0] = r_center.rect.tl();
+                    r_center.points_4[1] = cv::Point2f(r_center.rect.x + r_center.rect.width, r_center.rect.y);
+                    r_center.points_4[2] = r_center.rect.br();
+                    r_center.points_4[3] = cv::Point2f(r_center.rect.x, r_center.rect.y + r_center.rect.height);
+                    // RRT
+                    // r_center.rotatedrect = r_rrt;
+                    // cv::Point2f pts[4];
+                    // redefineRotatedRectPoints(pts,r_rrt);
+                    // for(int index = 0; index < 4; index++)
+                    //     r_center.points_4[index] = pts[index];
+
+
+                    r_center.imu_position = AS.pixel2imu(r_center.points_4, BUFF_R); 
+                    r_center.buff_position = AS.imu2buff(r_center.imu_position); 
+
+                    // 剔除不良数值，即与实际距离的值偏差大的
+                    double dis = r_center.buff_position.norm();
+                    if(dis < r_actual_distance + error_range && dis > r_actual_distance - error_range)
+                    {
+                        r_center.points_3d.emplace_back(r_center.buff_position);
+                        r_center.points_2d.emplace_back(cv::Point2f(r_center.buff_position[0],r_center.buff_position[2]));
+                        // RT
+                        r_center.pixel_position = cv::Point2f(r_center.rect.x + r_center.rect.width/2, r_center.rect.y + r_center.rect.height/2);
+                        // RRT
+                        // r_center.pixel_position = r_rrt.center;
+                        return true;
+                    }
                 }
             }
         }
@@ -207,22 +246,38 @@ namespace robot_detection
 
     bool BuffDetector::fitCircle()
     {
-        // TODO: fit circle, 检测不良数值
-        if(r_center.vec_points.size() <= fit_circle_counts)
+        if(r_center.points_3d.size() <= fit_circle_counts)
         {
             return false;
         }
         else
         {
-            Eigen::Vector3d temp = r_center.vec_points[0];
+            // fit in 3d
+            Eigen::Vector3d temp = r_center.points_3d[0];
             for(int i=1; i<fit_circle_counts; ++i)
             {
-                temp = (temp + r_center.vec_points[i]) / 2;
+                temp = (temp + r_center.points_3d[i]) / 2;
             }
-            r_center.imu_position = temp;
+            r_center.buff_position = temp;
+
+            // fit in 2d
+            AS.circleLeastFit(r_center.points_2d,r_center.buff_position[0],r_center.buff_position[2],r_center.radius);
+
             isFindR = true;
             return true;
         }
+    }
+
+    // 当前测距和实际距离的缩放比例，依靠识别到的R来确定
+    bool BuffDetector::calculateScaleRatio()
+    {
+        double actual_diagonal_distance = sqrt(AS.buff_r_h*AS.buff_r_h + AS.buff_r_w*AS.buff_r_w);
+        // TODO: 做好坐标系转换
+        // Eigen::Vector3d tl = AS.pixel2imu()
+        double compute_diagonal_distance = 1;
+
+        scale_ratio = actual_diagonal_distance / compute_diagonal_distance;
+        return true;
     }
 
     // 找击打和未击打的符叶的零部件
@@ -262,16 +317,22 @@ namespace robot_detection
             // }
         }
 
-        if(components_rrt.empty())
+        if(components_rrt.size() < 2)
+        {
+            std::cerr<<"no 2 components !!!"<<std::endl;
             return false;
+        }
         else
+        {
             return true;
+        }
     }
 
     // 匹配找到的零部件，靠三点一线约束
     bool BuffDetector::matchComponents()
     {
-        cv::Point2f r_point = AS.imu2pixel(r_center.imu_position);
+        // 圆心在每一帧内的像素坐标点
+        r_center.pixel_position = AS.imu2pixel(r_center.imu_position);
 
         for(int i = 0; i < components_rrt.size(); ++i)
         {
@@ -280,12 +341,12 @@ namespace robot_detection
                 if(i == j)
                     continue;
 
-                double radius1 = POINT_DIST(r_point,components_rrt[i].center);  // out 0.8160m
-                double radius2 = POINT_DIST(r_point,components_rrt[j].center);  // in  0.5805m
+                double radius1 = POINT_DIST(r_center.pixel_position,components_rrt[i].center);  // out 0.8160m
+                double radius2 = POINT_DIST(r_center.pixel_position,components_rrt[j].center);  // in  0.5805m
                 double radius_ratio = radius1 / radius2;
 
                 bool radius_ratio_ok = (radius_ratio < 1.5) && (radius_ratio > 1.3) ? true : false;
-                bool in_one_line = AS.pointsInLine(r_point,components_rrt[j].center,components_rrt[i].center,10,0);
+                bool in_one_line = AS.pointsInLine(r_center.pixel_position,components_rrt[j].center,components_rrt[i].center,10,0);
                 if(radius_ratio_ok && in_one_line)
                 {
                     buff_no.in_rrt = components_rrt[j];
@@ -297,6 +358,7 @@ namespace robot_detection
         return true;
     }
 
+    // 重点在于五点检测的输入点的顺序
     bool BuffDetector::calculateBuffPosition()
     {
         cv::Point2f out_rrt_pts[4];
@@ -359,31 +421,62 @@ namespace robot_detection
         buff_no.points_5[3] = in_rrt_pts[0];
         buff_no.points_5[4] = r_center.pixel_position;
 
-        buff_no.imu_position = AS.imu2buff(AS.pixel2imu(buff_no.points_5, BUFF_NO));
+        // 未击打大符坐标计算
+        buff_no.imu_position = AS.pixel2imu(buff_no.points_5, BUFF_NO);
+        buff_no.buff_position = AS.imu2buff(buff_no.imu_position);
 
         return true;
     }
 
-    bool BuffDetector::isRotateClockwise()
+    // 最简单的就是让操作手输入旋转方向，不行就自己计算旋转方向，靠向量的叉乘计算    采用余弦定理可以计算帧与帧之间的旋转角度
+    bool BuffDetector::calculateRotateDirectionAndSpeed()
     {
-        // 在相机坐标系下规定五点
-        double angle = atan2((buff_no.imu_position[2] - r_center.imu_position[2]),(buff_no.imu_position[0] - r_center.imu_position[0]));
+        // TODO: 有待改进
+        // 在buff坐标系下规定，从x正方向旋转一周为0~360，用这个计算角度差值是有问题的
+        double angle = atan2((buff_no.buff_position[2] - r_center.buff_position[2]),(buff_no.buff_position[0] - r_center.buff_position[0]));
         angle = angle / CV_PI * 180;
         if(angle<0)
             angle += 360;
         
-        if(angle-last_angle<0)
+        if(!isFirstCalculate)
         {
-            isClockwise = false;
-            return true;
+            last_angle = angle;
         }
         else
         {
-            isClockwise = true;
-            return false;
+            if(angle-last_angle<0)
+            {
+                isClockwise = false;
+                last_angle = angle;
+            }
+            else
+            {
+                isClockwise = true;
+                last_angle = angle;
+            }
         }
+
+        // 向量的叉乘计算
+        Eigen::Vector3d now_vector;
+        if(!isFirstCalculate)
+        {
+            last_vector = buff_no.buff_position - r_center.buff_position;
+        }
+        else
+        {
+            now_vector = buff_no.buff_position - r_center.buff_position;
+
+
+            last_vector = now_vector;
+        }
+
+        double numerator = last_vector.norm()*last_vector.norm() + now_vector.norm()*now_vector.norm() - (now_vector - last_vector).norm()*(now_vector - last_vector).norm();
+        double denominator = 2 * last_vector.norm() * now_vector.norm();
+        double cos_delta_angle =  numerator / denominator;
+        double delta_angle = acos(cos_delta_angle) * 180.0 / CV_PI;
+
+        
     }
     
-
     
 }

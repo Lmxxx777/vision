@@ -278,7 +278,7 @@ namespace robot_detection {
     bool ArmorTracker::locateEnemy(cv::Mat src, std::vector<Armor> armors, double time)
     {
         src.copyTo(_src);
-
+        
         if(!locate_target)
         {
             if(initial(armors))
@@ -302,15 +302,9 @@ namespace robot_detection {
 //            std::cout<<"dt:"<<dt<<std::endl;
             t = time;
 
-            if(!selectEnemy(armors,dt))
-            {
-                return false;
-            }
+            if(!selectEnemy(armors,dt))  { return false; }
 
-            if(!estimateEnemy(dt))
-            {
-                return false;
-            }
+            if(!estimateEnemy(dt)) { return false; }
 
             Eigen::Vector3d rpy = AS.getAngle(predicted_position);    
             pitch = rpy[1];
