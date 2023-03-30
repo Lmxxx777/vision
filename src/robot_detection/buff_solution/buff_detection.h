@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
@@ -60,13 +61,18 @@ namespace robot_detection
 
         // 0：R未找到，1：找一对括号，2：已经击中一个，5：差最后一个
         int state;
-        double scale_ratio;     // 检测到的坐标和实际坐标的比例缩放
-        bool isSmallBuff;
-        int buff_type;
-        bool isClockwise;
+
+        // 检测到的坐标和实际坐标的比例缩放
+        double symbol_scale_ratio;      // R的对角线的实际长度比测距长度
+        double radius_scale_ratio;      // 未击打符叶靶心和R中心的实际距离比测距距离
+
+        bool isSmallBuff;       // 默认为小符，小符为true，大符为false
+        int buff_type;          // 默认为小符，小符为，大符为false
+
+        bool isClockwise;       // true表示顺时针，false表示逆时针
         int rotate_direction;   // 1表示顺时针，-1表示逆时针
         double rotate_speed;
-        bool isChange;
+        double const_rotate_speed;  // 60°/s
 
         AngleSolve AS;
         bool isInitYaw;
@@ -99,7 +105,6 @@ namespace robot_detection
         double r_full_ratio_max;
         bool findRcenter();
         bool fitCircle();
-        bool calculateScaleRatio();
 
         // Buff_components
         std::vector<cv::RotatedRect> components_rrt;
@@ -109,14 +114,30 @@ namespace robot_detection
 
         //Buff calculation
         bool calculateBuffPosition();
+        bool calculateScaleRatio();
+        bool isSwitchBuff();
         double last_angle;
         Eigen::Vector3d last_vector;
         chrono_time last_time;
         bool isFirstCalculate;
         bool calculateRotateDirectionAndSpeed(chrono_time now_time);
 
+        // buff feature
+        // speed = a * sin(w * t) + b
+        std::vector<double> speed_vector;
+        double a;
+        double w;
+        double b;
+        int fit_sinusoid_counts;
+        double fit_sinusoid_time;  // CV_PI/2(1.57079632675) ~ 1.667s
+        bool fitSinusoid();
+        chrono_time begin_time;
+        bool isSwitch;
+        bool isBegin;
+
         // Buff_no
-        Buff_no buff_no;
+        Buff_no buff_no;        // 当前帧的未击打符叶
+        Buff_no buff_no_last;   // 过去帧的未击打符叶
         double no_buff_area_min;
         double no_buff_area_max;
         double no_full_ratio_min;

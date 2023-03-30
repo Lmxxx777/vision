@@ -41,7 +41,6 @@ namespace robot_detection {
         double last_x[2] = {0,0};
         Eigen::Vector3d predicted_xyz = {0,0,0};
         
-
         Skalman();
         void Reset();
         void Reset(const Eigen::Vector2d &Xpos);

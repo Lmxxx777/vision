@@ -140,17 +140,16 @@ namespace robot_detection{
 
         cv::Mat rvec;
         cv::Mat tvec;
-        Eigen::Vector3d tv;
 
         cv::solvePnP(ps, pu, F_MAT, C_MAT, rvec, tvec/*, SOLVEPNP_IPPE*/);
+        
+        Mat rv_mat;
+        cv::Rodrigues(rvec,rv_mat);
+        cv::cv2eigen(rv_mat,rv);
         cv::cv2eigen(tvec, tv);
 
 #ifdef SHOW_MEASURE_RRECT
         Mat pnp_check = _src.clone();
-        Mat rv_mat;
-        Eigen::Matrix<double,3,3> rv;
-        cv::Rodrigues(rvec,rv_mat);
-        cv::cv2eigen(rv_mat,rv);
         std::cout<<"rv"<<rv<<std::endl;
 
         Eigen::Vector3d imuPoint = {-w / 2 , -h / 2, 0.};
@@ -251,6 +250,19 @@ namespace robot_detection{
     {
         armor.camera_position = pnpSolve(armor.armor_pt4,armor.type);
         return armor.camera_position;
+    }
+
+    Eigen::Vector3d AngleSolve::pnp2imu(Eigen::Vector3d pos)
+    {
+        Eigen::Vector3d camera_position = pnp2cam(pos);
+        Eigen::Vector3d imu_pos = cam2imu(camera_position);
+        return imu_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pnp2cam(Eigen::Vector3d pos)
+    {
+        Eigen::Vector3d camera_position = rv*pos + tv;
+        return camera_position;
     }
 
     // for buff

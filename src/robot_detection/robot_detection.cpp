@@ -165,6 +165,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     Targets = Detect.autoAim(src, enemy_color);
     if (!Targets.empty())
     {
+        // std::cout<<"main get ---"<<Targets[0].id<<"--- target!!!"<<std::endl;
         // std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
     }
     else

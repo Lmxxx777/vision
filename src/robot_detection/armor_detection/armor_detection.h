@@ -26,9 +26,8 @@ namespace robot_detection {
             // sentry
             angle = atan2(bottom.y-top.y, bottom.x-top.x) * 180 / CV_PI;
             // infantry
-            // angle = box.angle;
             // angle = top.x < bottom.x ? box.angle : 90 + box.angle;
-            // if(fabs(bottom.x - top.x) <= 0.01) angle = 0;
+            // if(fabs(bottom.x - top.x) <= 0.01) angle = 90;
         }
 
         int lightColor;

@@ -7,17 +7,14 @@ namespace robot_detection
 {
     BuffDetector::BuffDetector()
     {
-        state = 0;
-        isInitYaw = false;
-
         cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", cv::FileStorage::READ);
 
-        //binary_thresh
+        // binary_thresh
         binary_threshold = (int)fs["binary_threshold"];   // blue 100  red  70
-        //enemy_color
+        // enemy_color
         buff_color = COLOR(((std::string)fs["buff_color"]));
 
-        // R
+        // r
         fit_circle_counts = (int)fs["fit_circle_counts"]; 
         r_actual_distance = (double)fs["r_actual_distance"];
         error_range = (double)fs["error_range"];
@@ -26,24 +23,36 @@ namespace robot_detection
         r_full_ratio_min = (double)fs["r_full_ratio_min"]; 
         r_full_ratio_max = (double)fs["r_full_ratio_max"]; 
 
-        // Buff_no
+        // buff_no
         no_buff_area_max = (double)fs["no_buff_area_max"]; 
         no_buff_area_min = (double)fs["no_buff_area_min"]; 
         no_full_ratio_min = (double)fs["no_full_ratio_min"]; 
         no_full_ratio_max = (double)fs["no_full_ratio_max"]; 
 
-        // Buff_yes
+        // buff_yes
         yes_buff_area_max = (double)fs["yes_buff_area_max"]; 
         yes_buff_area_min = (double)fs["yes_buff_area_min"]; 
         yes_full_ratio_min = (double)fs["yes_full_ratio_min"]; 
         yes_full_ratio_max = (double)fs["yes_full_ratio_max"]; 
+
+        // buff_feature
+        fit_sinusoid_counts = (int)fs["fit_sinusoid_counts"];
 
         fs.release();
 
         // TODO: need to define buff_color 
         buff_color = BLUE;
 
-        isSmallBuff = false;
+        state = 0;
+
+        const_rotate_speed = 60;    
+
+        symbol_scale_ratio = 0;
+        radius_scale_ratio = 0;
+        isSmallBuff = true;
+
+        isInitYaw = false;
+
         isClockwise = false;
         isFirstCalculate = false;
     }
@@ -70,8 +79,6 @@ namespace robot_detection
                 return false;
             if(!fitCircle())
                 return false;
-            if(!calculateScaleRatio())
-                return false;
         }
         else
         {
@@ -80,6 +87,7 @@ namespace robot_detection
                 matchComponents();
             }
             calculateBuffPosition();
+            calculateScaleRatio();
             calculateRotateDirectionAndSpeed(now_time);
 
             
@@ -260,18 +268,6 @@ namespace robot_detection
         }
     }
 
-    // 当前测距和实际距离的缩放比例，依靠识别到的R来确定
-    bool BuffDetector::calculateScaleRatio()
-    {
-        double actual_diagonal_distance = sqrt(AS.buff_r_h*AS.buff_r_h + AS.buff_r_w*AS.buff_r_w);
-        // TODO: 做好坐标系转换
-        // Eigen::Vector3d tl = AS.pixel2imu()
-        double compute_diagonal_distance = 1;
-
-        scale_ratio = actual_diagonal_distance / compute_diagonal_distance;
-        return true;
-    }
-
     // 找击打和未击打的符叶的零部件
     bool BuffDetector::findComponents()
     {
@@ -344,10 +340,12 @@ namespace robot_detection
                     buff_no.in_rrt = components_rrt[j];
                     buff_no.out_rrt = components_rrt[i];
                     buff_no.pixel_position = (components_rrt[j].center + components_rrt[i].center) / 2;
+
+                    return true;
                 }
             }
         }
-        return true;
+        return false;
     }
 
     // 重点在于五点检测的输入点的顺序
@@ -448,6 +446,27 @@ namespace robot_detection
         return true;
     }
 
+    // 当前测距和实际距离的缩放比例，依靠识别到的R来确定
+    bool BuffDetector::calculateScaleRatio()
+    {
+        double actual_symbol_diagonal_distance = sqrt(AS.buff_r_h*AS.buff_r_h + AS.buff_r_w*AS.buff_r_w);
+        // TODO: 做好坐标系转换
+        // Eigen::Vector3d tl = AS.pixel2imu()
+        double compute_symbol_diagonal_distance = 1;
+        symbol_scale_ratio = actual_symbol_diagonal_distance / compute_symbol_diagonal_distance;
+
+        double actual_radius_length = AS.buff_radius;
+        double compute_radius_length = (buff_no.buff_position - r_center.buff_position).norm();
+        radius_scale_ratio = actual_radius_length / compute_radius_length;
+        
+        return true;
+    }
+
+    bool BuffDetector::isSwitchBuff()
+    {
+        
+    }
+
     // 最简单的就是让操作手输入旋转方向，不行就自己计算旋转方向，靠向量的叉乘计算    采用余弦定理可以计算帧与帧之间的旋转角度
     bool BuffDetector::calculateRotateDirectionAndSpeed(chrono_time now_time)
     {
@@ -456,14 +475,14 @@ namespace robot_detection
         if(!isFirstCalculate)
         {
             last_vector = buff_no.buff_position - r_center.buff_position;
-            last_time = now_time;
+            last_time = std::chrono::high_resolution_clock::now();
             
             return false;
         }
         else
         {
             now_vector = buff_no.buff_position - r_center.buff_position;
-
+            // TODO: 这里用了三个坐标轴的值
             // delta_angle
             double numerator = last_vector.norm()*last_vector.norm() + now_vector.norm()*now_vector.norm() - (now_vector - last_vector).norm()*(now_vector - last_vector).norm();
             double denominator = 2 * last_vector.norm() * now_vector.norm();
@@ -474,11 +493,52 @@ namespace robot_detection
 
             // calculate rotate speed
             rotate_speed = delta_angle / delta_time;
+            // 保证速度在实际范围内 
+            if(rotate_speed<0)
+                rotate_speed = 0;   // 余弦定理算的角度肯定没有负值，为了好看才加这一段代码
+            else if(rotate_speed>2.09)
+                rotate_speed = 2.09;
+            speed_vector.emplace_back(rotate_speed);
+
+            // calculate rotate direction
+            isClockwise = last_vector[0]*now_vector[2]-last_vector[2]*now_vector[0] > 0 ? false : true;
+            rotate_direction = isClockwise ? CLOCKWISE : ANTI_CLOCKWISE;
 
             last_vector = now_vector;
             last_time = now_time;
+
+            if(!isBegin)
+            {
+                begin_time = std::chrono::high_resolution_clock::now();
+                isBegin = true;
+            }
             return true;
         }
+    }
+
+    bool BuffDetector::fitSinusoid()
+    {
+        chrono_time now_time = std::chrono::high_resolution_clock::now();
+        double delta_time = seconds_duration(now_time - last_time).count();
+        if(delta_time <= fit_sinusoid_time)
+        {
+            return false;
+        }
+        else
+        {
+            double all_speed_sum = 0;
+            for(int i=0; i<speed_vector.size(); ++i)
+            {
+                all_speed_sum += speed_vector[i];
+            }
+            b = all_speed_sum / speed_vector.size();
+            a = 2.090 - b;
+            // TODO: 这个 w 不好算啊 --- 算周期，波峰减去波谷的时间差
+            w = asin((rotate_speed - b) / a) / delta_time;
+
+            return true;
+        }
+
     }
 
     

@@ -67,18 +67,18 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.h
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.cpp
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.h
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.cpp
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.h
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.cpp
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.h
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.cpp
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.h
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.cpp
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.h
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.cpp
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.h
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.cpp
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.h
 )
 
 # for auto aim
-add_executable(robot_detection robot_detection.cpp)
+# add_executable(robot_detection robot_detection.cpp)
 # for buff aim
-# add_executable(robot_detection buff_solution.cpp)
+add_executable(robot_detection buff_solution.cpp)
 # for debug buff
 # add_executable(robot_detection buff_debug.cpp)
 
