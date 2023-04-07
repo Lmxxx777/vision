@@ -131,7 +131,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     ros::Time begin = ros::Time::now();
 
     // begin for predict
-    double now_time = (double)cv::getTickCount();
+    robot_detection::chrono_time now_time = std::chrono::high_resolution_clock::now();
     // robot_detection::chrono_time t;
 
     // camera
@@ -184,6 +184,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     // 不开自瞄一直重置跟踪器
     bool is_need_reset = mode != 0x31 ? true : false;
+    is_need_reset = false;  // TODO:  for test
     if(is_need_reset)
         Track.reset();
 

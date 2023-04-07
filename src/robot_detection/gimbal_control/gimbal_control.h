@@ -12,18 +12,18 @@ namespace robot_detection{
 
         void init(float r, float p, float y, float quat[4], float speed);
 
-        double big_w;
-        double big_h;
-        double small_w;
-        double small_h;
-        double buff_r_w;
-        double buff_r_h;
-        double buff_in_w;
-        double buff_in_h;
-        double buff_out_w;
-        double buff_out_h;
-        double buff_radius;
-        double buff_convex;
+        float big_w;
+        float big_h;
+        float small_w;
+        float small_h;
+        float buff_r_w;
+        float buff_r_h;
+        float buff_in_w;
+        float buff_in_h;
+        float buff_out_w;
+        float buff_out_h;
+        float buff_radius;
+        float buff_convex;
 
         std::string self_type;
 

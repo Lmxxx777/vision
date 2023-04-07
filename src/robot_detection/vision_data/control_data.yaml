@@ -14,7 +14,7 @@ buff_radius: 0.700
 buff_convex: 0.146
 
 
-self_type: balance_infantry
+self_type: sentry
 
 omni_infantry:
   F_MAT: !!opencv-matrix
@@ -87,4 +87,27 @@ hero:
     cols: 1
     dt: d
     data: [ 0 , 0 , 0 ]
-#595 6mm
+
+sentry:
+  F_MAT: !!opencv-matrix
+    rows: 3
+    cols: 3
+    dt: d
+    data: [ 1579.60532    , 0.000000000000, 627.56545     ,
+            0.000000000000, 1579.86788    , 508.65311     ,
+            0.000000000000, 0.000000000000, 1.000000000000 ]
+  C_MAT: !!opencv-matrix
+    rows: 1
+    cols: 5
+    dt: d
+    data: [ -0.09082 , 0.22923 , -0.00020 , 0.00013 , 0.00000 ]
+  center_offset_position: !!opencv-matrix
+    rows: 3
+    cols: 1
+    dt: d
+    data: [ 0 , 0.17 , -0.03 ]
+  gimbal_offset_angle: !!opencv-matrix
+    rows: 3
+    cols: 1
+    dt: d
+    data: [ 0 , 0 , 0 ]    

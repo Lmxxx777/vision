@@ -20,7 +20,7 @@ namespace robot_detection {
         Mat out_blob;
         cvtColor(ori_img, ori_img, cv::COLOR_RGB2GRAY);
         threshold(ori_img, ori_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-        cv::resize(ori_img,ori_img,Size(input_width,input_height));
+        // cv::resize(ori_img,ori_img,Size(input_width,input_height));
         numROIs.push_back(ori_img);
     }
 

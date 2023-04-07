@@ -12,18 +12,18 @@ namespace robot_detection{
     {
         cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
 
-        big_w = (double)fs["big_w"];
-        big_h = (double)fs["big_h"];
-        small_w = (double)fs["small_w"];
-        small_h = (double)fs["small_h"];
-        buff_r_w = (double)fs["buff_r_w"];
-        buff_r_h = (double)fs["buff_r_h"];
-        buff_in_w = (double)fs["buff_in_w"];
-        buff_in_h = (double)fs["buff_in_h"];
-        buff_out_w = (double)fs["buff_out_w"];
-        buff_out_h = (double)fs["buff_out_h"];
-        buff_radius = (double)fs["buff_radius"];
-        buff_convex = (double)fs["buff_convex"];
+        big_w = (float)fs["big_w"];
+        big_h = (float)fs["big_h"];
+        small_w = (float)fs["small_w"];
+        small_h = (float)fs["small_h"];
+        buff_r_w = (float)fs["buff_r_w"];
+        buff_r_h = (float)fs["buff_r_h"];
+        buff_in_w = (float)fs["buff_in_w"];
+        buff_in_h = (float)fs["buff_in_h"];
+        buff_out_w = (float)fs["buff_out_w"];
+        buff_out_h = (float)fs["buff_out_h"];
+        buff_radius = (float)fs["buff_radius"];
+        buff_convex = (float)fs["buff_convex"];
 
         fs["self_type"] >> self_type;
 
@@ -59,13 +59,14 @@ namespace robot_detection{
 
     Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type)
     {
-        std::vector<cv::Point3d> ps;
+        // TODO:  float only
+        std::vector<cv::Point3f> ps;
         std::vector<cv::Point2f> pu;
 
         if(type == SMALL)
         {
-            double w = small_w;
-            double h = small_h;
+            float w = small_w;
+            float h = small_h;
             ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
@@ -79,8 +80,8 @@ namespace robot_detection{
         }
         else if(type == BIG)
         {
-            double w = big_w;
-            double h = big_h;
+            float w = big_w;
+            float h = big_h;
             ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
@@ -94,8 +95,8 @@ namespace robot_detection{
         }
         else if(type == BUFF_R)
         {
-            double w = buff_r_w;
-            double h = buff_r_h;
+            float w = buff_r_w;
+            float h = buff_r_h;
             ps = {
                     {-w / 2 , -h / 2, 0.},
                     { w / 2 , -h / 2, 0.},
@@ -310,7 +311,7 @@ namespace robot_detection{
         float a;
         y_temp = y;
         // by iteration
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 30; i++)
         {
             a = (float)atan2(y_temp, x);
             y_actual = BulletModel(x, bullet_speed, a);
@@ -319,7 +320,7 @@ namespace robot_detection{
             if (fabsf(dy) < 0.001) {
                 break;
             }
-            // printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
+            printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
         }
 
         // return Vector3d(Pos[0],-y_temp,Pos[2]);  // cam

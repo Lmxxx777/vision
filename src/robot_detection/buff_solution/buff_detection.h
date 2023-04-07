@@ -121,6 +121,7 @@ namespace robot_detection
         chrono_time last_time;
         bool isFirstCalculate;
         bool calculateRotateDirectionAndSpeed(chrono_time now_time);
+        bool calculateShootPosition();
 
         // buff feature
         // speed = a * sin(w * t) + b

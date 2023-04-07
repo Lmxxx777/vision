@@ -502,7 +502,7 @@ namespace robot_detection
 
             // calculate rotate direction
             isClockwise = last_vector[0]*now_vector[2]-last_vector[2]*now_vector[0] > 0 ? false : true;
-            rotate_direction = isClockwise ? CLOCKWISE : ANTI_CLOCKWISE;
+            rotate_direction = isClockwise ? CLOCKWISE : COUNTER_CLOCKWISE;
 
             last_vector = now_vector;
             last_time = now_time;
@@ -537,6 +537,19 @@ namespace robot_detection
             w = asin((rotate_speed - b) / a) / delta_time;
 
             return true;
+        }
+
+    }
+
+
+    bool BuffDetector::calculateShootPosition()
+    {
+        if(buff_type == CONST_SPEED)
+        {
+            // calculate time
+            double t = AS.getFlyTime(buff_no.imu_position) + SHOOT_DELAY; 
+            
+
         }
 
     }

@@ -133,7 +133,9 @@ namespace robot_detection {
         
         void preImplement(Armor& armor);
 
-        bool get_max(const float *data, float &confidence, int &id);
+        bool get_max(const float *data, float &confidence, int &id);//serve single-task network
+
+        bool get_valid(const float *data, float &confidence, int &id);// serve multi-task network
     };
 
 }

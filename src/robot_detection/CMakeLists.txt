@@ -57,6 +57,8 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/number_DNN/number_DNN.h 
             ${PROJECT_SOURCE_DIR}/armor_detection/armor_detection.cpp
             ${PROJECT_SOURCE_DIR}/armor_detection/armor_detection.h
+            ${PROJECT_SOURCE_DIR}/armor_track/spin_track.cpp
+            ${PROJECT_SOURCE_DIR}/armor_track/spin_track.h
             ${PROJECT_SOURCE_DIR}/armor_track/armor_track.cpp
             ${PROJECT_SOURCE_DIR}/armor_track/armor_track.h            
             ${PROJECT_SOURCE_DIR}/armor_prediction/armor_prediction.cpp
@@ -76,9 +78,9 @@ add_library(robot_detection_lib
 )
 
 # for auto aim
-# add_executable(robot_detection robot_detection.cpp)
+add_executable(robot_detection robot_detection.cpp)
 # for buff aim
-add_executable(robot_detection buff_solution.cpp)
+# add_executable(robot_detection buff_solution.cpp)
 # for debug buff
 # add_executable(robot_detection buff_debug.cpp)
 

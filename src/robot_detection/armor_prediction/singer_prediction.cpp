@@ -17,12 +17,9 @@ namespace robot_detection{
         R << 5e-4, 0,
             0, 5e-4;
 
-        //init Xk_1
-        Xk_1 << 0,0.1,0,
-                0,0.1,0;
-
         //init Xk
-    //    Xk = Xk_1;
+        Xk << 0,0.1,0,
+                0,0.1,0;
 
         //init P
         double r11 = R(0,0);
@@ -52,12 +49,9 @@ namespace robot_detection{
 
     void Skalman::Reset()
     {
-        //init Xk_1
-        Xk_1 << 0,0.1,0,
-                0,0.1,0;
-
         //init Xk
-    //    Xk = Xk_1;
+        Xk << 0,0.1,0,
+                0,0.1,0;
 
         //init P
         double r11 = R(0,0);
@@ -108,7 +102,7 @@ namespace robot_detection{
 
     void Skalman::setXpos(const Eigen::Vector2d &Xpos)
     {
-        Xk_1 << Xpos(0,0),0.1,0,
+        Xk << Xpos(0,0),0.1,0,
                 Xpos(1,0),0.1,0;
         last_x[0] = Xpos(0,0);
         last_x[1] = Xpos(1,0);
@@ -209,11 +203,11 @@ namespace robot_detection{
         Sk = H*P*H.transpose() + R;
         lamda = std::max(1.,_Sk.trace()/Sk.trace());
     //    std::cout<<"lamda:"<<lamda<<std::endl;
-        P = lamda*((F * P * F.transpose()) + W);
+        P = lamda*(F * P * F.transpose() + W);
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Xk = Xk_1 + K * (Zk - H * Xk_1);
         P = (Eigen::Matrix<double, 6, 6>::Identity() - K * H) * P;
-        return Xk_1;
+        return Xk;
     }
 
     bool Skalman::SingerPrediction(const double &dt,
@@ -239,23 +233,16 @@ namespace robot_detection{
         Eigen::Matrix<double,6,1> predicted_result = predict(true);
         //std::cout<<"result:"<<predicted_result<<std::endl;
         //! filter for result, inhibit infinite change
-    //    double predicted_x = predicted_result(0,0);
-    //    double predicted_y = predicted_result(3,0);//no need to calculate with filter
-    //    double predicted_z = imu_position(2,0);
         predicted_xyz[predict_x1] = filter(last_x[0],predicted_result(0,0),x1);
         predicted_xyz[predict_x2] = filter(last_x[1],predicted_result(3,0),x2);
         predicted_xyz[constant_x] = imu_position(constant_x,0);
-    //    predicted_x = filter(last_x1,predicted_x,x1);
-    //    predicted_y = filter(last_x2,predicted_y,x2);
-    //    last_x1 = predicted_xyz[predict_x1];
-    //    last_x2 = predicted_xyz[predict_x2];
         last_x[0] = predicted_xyz[predict_x1];
         last_x[1] = predicted_xyz[predict_x2];
         
     //    predicted_position << predicted_x,predicted_y,predicted_z;
         predicted_position = predicted_xyz;
         
-        if (!finite(predicted_position.norm()) || predicted_position.norm() - imu_position.norm() > error_distance){
+        if (!finite(predicted_position.norm()) || predicted_position.norm() - imu_position.norm() > error_distance || lamda > 6){
             predicted_position = imu_position;
             return false;
         }
