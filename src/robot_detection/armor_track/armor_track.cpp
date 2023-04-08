@@ -27,6 +27,10 @@ namespace robot_detection {
 
         new_old_threshold = (double)fs["new_old_threshold"];
 
+        switch_enemy_cnt = 0;
+        switch_enemy_threshold = (int)fs["switch_enemy_threshold"];
+        max_effective_distance = (double)fs["max_effective_distance"];
+
         anti_spin_max_r_multiple = (double)fs["anti_spin_max_r_multiple"];
         anti_spin_judge_low_thres = (int)fs["anti_spin_judge_low_thres"];
         anti_spin_judge_high_thres = (int)fs["anti_spin_judge_high_thres"];
@@ -48,6 +52,7 @@ namespace robot_detection {
         tracking_id = 0;
         find_aim_cnt = 0;
         lost_aim_cnt = 0;
+        switch_enemy_cnt = 0;
     }
 
     // 初始化，选择最优装甲板，设置卡尔曼的F和x_1，当没有目标时返回false，选一个最优目标返回true
@@ -62,6 +67,11 @@ namespace robot_detection {
         double distance = DBL_MAX;
         for (auto & armor : find_armors)
         {
+            if(armor.id == 1)
+            {
+                enemy_armor = armor;
+                break;
+            }
             double dis_tmp = armor.world_position.norm();
             if (dis_tmp < distance)
             {
@@ -82,6 +92,56 @@ namespace robot_detection {
         // std::cout<<AS.ab_roll<<"     "<<AS.ab_pitch<<"     "<<AS.ab_yaw<<std::endl;
         // std::cout<<"enemy_armor.world_position:  "<<enemy_armor.world_position.transpose()<<std::endl;
         return true;
+    }
+
+    bool ArmorTracker::switchEnemy(std::vector<Armor> find_armors)
+    {
+        Armor tmp;
+        // genju juli shezhi fadanmoshi  
+        if(enemy_armor.camera_position.norm() > max_effective_distance)
+        {
+            reset();
+            return false;
+        }
+        else
+        {
+            // TODO: 如果另一台车比跟踪的进应该怎么选？
+            if(!find_armors.empty())
+            {
+                for(auto armor : find_armors)
+                {
+                    if(armor.id == 1 && tracking_id != 1)
+                    {
+                        tmp = armor;
+                        switch_enemy_cnt++;
+                    }
+                    else
+                    {
+                        switch_enemy_cnt = 0;
+                    }
+                }
+            }
+            else
+            {
+                switch_enemy_cnt = 0;
+            }
+
+            return false;
+        }
+
+        if(switch_enemy_cnt >= switch_enemy_threshold)
+        {
+            enemy_armor = tmp;
+            
+            tracker_state = DETECTING;
+            tracking_id = enemy_armor.id;
+            // initial KF --- x_post
+            KF.initial_KF();
+            enemy_armor.world_position = AS.pixel2imu(enemy_armor);
+            KF.setXPost(enemy_armor.world_position);
+            Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(1,0)});
+            return true;
+        }
     }
 
     // dt是两帧之间时间间隔, 跟得住目标  用预测来做匹配，确定跟踪器状态
@@ -153,16 +213,21 @@ namespace robot_detection {
                     {
                         armor.world_position = AS.pixel2imu(armor);
                         final_armors.push_back(armor);
+                        // 储存装甲板
+                        if (history_armors.size() <= max_history_len)
+                        {
+                            history_armors.push_back(armor);
+                        } else
+                        {
+                            history_armors.pop_front();
+                            history_armors.push_back(armor);
+                        }
                         matched = true;
     //                    std::cout << "match" << std::endl;
                     } else {
                         continue;
                     }
                 }
-    //            std::cout << "jump_trackers size: " << jump_trackers.size() << std::endl;
-    //            std::cout << "backward_with_same_ID: " << backward_with_same_ID << std::endl;
-    //            std::cout << "final_armors size: " << final_armors.size() << std::endl;
-    //            std::cout << "spin T: " << spin_T << std::endl;
 
                 //若存在一块装甲板
                 if (final_armors.size() == 1)
@@ -175,9 +240,12 @@ namespace robot_detection {
                     {
                         std::cout << "---1->1(跳变)---"<< std::endl;
                         if (milliseconds_duration (t - jump_trackers.at(0).jump_time).count()*2 > spin_T){ //TODO: why to do *2?
-                            spin_T = milliseconds_duration (t - jump_trackers.at(0).jump_time).count();
-                        }
+                            if (spin_T == 0)
+                                spin_T = milliseconds_duration (t - jump_trackers.at(0).jump_time).count();
+                            else
+                                spin_T = (milliseconds_duration (t - jump_trackers.at(0).jump_time).count() + spin_T) / 2;
 
+                        }
                         jump_tracker.jump_armor = matched_armor;
                         jump_tracker.jump_time = t;
                         jump_trackers.push_back(jump_tracker);
@@ -186,7 +254,10 @@ namespace robot_detection {
                         jump_trackers.erase(jump_trackers.begin());
 
                         if(is_vir_armor)
+                        {
                             kf_state = 2;
+                            is_aim_virtual_armor = false;
+                        }
                         else
                             kf_state = 1;
                     }
@@ -197,7 +268,11 @@ namespace robot_detection {
                             std::cout << "---2->1(无跳变)---"<< std::endl;
 
                             if (milliseconds_duration (t - jump_trackers.at(0).jump_time).count()*2 > spin_T){
-                                spin_T = milliseconds_duration (t - jump_trackers.at(0).jump_time).count();
+                                if (spin_T == 0)
+                                    spin_T = milliseconds_duration (t - jump_trackers.at(0).jump_time).count();
+                                else
+                                    spin_T = (milliseconds_duration (t - jump_trackers.at(0).jump_time).count() + spin_T) / 2;
+
                             }
                             double min_delta_dist = 0;
                             double min_delta_t = 1e9;
@@ -221,8 +296,8 @@ namespace robot_detection {
 
 
                     // 如果超过限制时间，构造虚拟装甲板。
-                    double delay_time = AS.getFlyTime(matched_armor.world_position) * 10000; // TODO：改为子弹飞行时间+系统时延+the time of move to disappear
-    //                std::cout << "delay_time: " << delay_time << std::endl;
+                    double delay_time = AS.getFlyTime(matched_armor.world_position) * 1000 + 20; // TODO：改为子弹飞行时间+系统时延+the time of move to disappear
+                    std::cout << "delay_time: " << AS.getFlyTime(matched_armor.world_position) * 1000 << std::endl;
     //                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch());
     //                auto ms2 = std::chrono::duration_cast<std::chrono::milliseconds>(jump_trackers.front().jump_time.time_since_epoch());
     //                std::cout << "t: " << ms.count() << std::endl;
@@ -238,44 +313,24 @@ namespace robot_detection {
                         std::cout << "---generate virtual armor--- " << std::endl;
                         real_armor = matched_armor;
     //                    std::cout << "---save tracker--- " << std::endl;
-
-
                         /// 根据当前装甲板、当前装甲板出现的第一帧装甲板、以及上一个消失的装甲板坐标用最小二乘法拟合圆，计算圆心、半径
-                        // 将Eigen::Vector3d转换为cv::Mat
-                        cv::Mat temp_mat1, temp_mat2, temp_mat3;
-                        cv::eigen2cv(matched_armor.world_position, temp_mat1);
-                        cv::eigen2cv(jump_trackers.front().jump_armor.world_position, temp_mat2);
-                        cv::eigen2cv(disappear_tracker.disappear_armor.world_position, temp_mat3);
-                        // 将cv::Mat转换为cv::Point2f
-                        cv::Point2f p1;
-                        cv::Point2f p2;
-                        cv::Point2f p3;
-    // 将v的前两个通道赋值给p
-                        p1.x = matched_armor.world_position[0];
-                        p1.y = matched_armor.world_position[1];
-                        p2.x = jump_trackers.back().jump_armor.world_position[0];
-                        p2.y = jump_trackers.back().jump_armor.world_position[1];
-                        p3.x = disappear_tracker.disappear_armor.world_position[0];
-                        p3.y = disappear_tracker.disappear_armor.world_position[1];
-    //                    std::cout << "[p1]: " << p1 << "   [p2]: " << p2 << "    [p3]: " << p3 << std::endl;
-                        cv::Mat image = cv::Mat::ones(300, 300, CV_8UC3);
-                        cv::Scalar color1(255, 0, 0); // 蓝色
-                        cv::Scalar color2(0, 0, 255); // red
-                        cv::Scalar color3(0, 255, 0); // green
+                        std::vector<cv::Point2f> pts;
+                        for (const auto& history_armor : history_armors)
+                        {
+                            pts.push_back(AS.Vector3d2point2f(history_armor.world_position));  // 将Eigen::Vector3d 转为 cv::point2f
+                        }
 
-                        cv::circle(image, cv::Point2f(p1.x*100+100, p1.y*100+100), 2, color2, -1);
-                        cv::circle(image, cv::Point2f(p2.x*100+100, p2.y*100+100), 2, color1, -1);
-                        cv::circle(image, cv::Point2f(p3.x*100+100, p3.y*100+100), 2, color1, -1);
-
-                        Circle circle = fitCircle(p1, p2, p3);
-                        cv::circle(image, cv::Point2f(circle.x*100+100, circle.y*100+100), circle.r*100, color3, 1);
-
-                        cv::imshow("Image", image);
+                        pts.push_back(AS.Vector3d2point2f(jump_trackers.back().jump_armor.world_position));
+                        pts.push_back(AS.Vector3d2point2f(disappear_tracker.disappear_armor.world_position));
+    //                    cv::Mat image = cv::Mat::ones(300, 300, CV_8UC3);
+    //                    cv::Scalar color1(255, 0, 0); // 蓝色
+                        Circle circle;
+                        AS.circleLeastFit(pts, circle.x, circle.y, circle.r);
                         circle.r = (circle.r + last_r) / 2;
     //                    std::cout << "[r]: " << circle.r << std::endl;
                         if (circle.r > 0.35){
                             circle.r = last_r;
-                            matched_armor.world_position = last_position;
+                            matched_armor.world_position = last_position; //TODO:优化
                         }
                         else
                         {/// 转化世界坐标
@@ -298,6 +353,12 @@ namespace robot_detection {
                             matched_armor.world_position.y() = new_world_position_y;
                         }
                         kf_state = 3;
+                        vir_num++;
+                        if (vir_num > vir_max)
+                        {
+                            kf_state = 2;
+                            spin_T = 0;
+                        }
                     }
                     /// 初始化/更新KF参数
                     if(kf_state == 2)
@@ -370,7 +431,11 @@ namespace robot_detection {
                         std::cout << "---2->2(无跳变)---"<< std::endl;
                         predicted_enemy = KF.update(matched_armor.world_position);
                     }
-                    is_vir_armor = false;
+                    if (is_vir_armor)
+                    {
+                        is_aim_virtual_armor = false;
+                        is_vir_armor = false;
+                    }
                 }
                 last_final_armors_size = final_armors.size();
                 last_position = matched_armor.world_position;
@@ -580,6 +645,8 @@ namespace robot_detection {
             double dt = seconds_duration (time - t).count();
             t = time;
 
+            // if(switchEnemy(armors)) { return false; }
+
             if(!selectEnemy(armors,dt))  { return false; }
 
             if (tracker_state == TRACKING) { spin_detect(); }
@@ -593,6 +660,7 @@ namespace robot_detection {
                 pitch = rpy[1];
                 yaw   = rpy[2];
                 pitch = round(pitch * 100)/100;
+                return false;  // TODO: fire or fail
             }
             else
             {
@@ -814,7 +882,7 @@ namespace robot_detection {
                 double last_armor_center;
     //            chrono_time last_armor_timestamp;
                 double new_armor_center;
-    //            chrono_time new_armor_timestamp;
+    //            chrono_time new_armor_tisubscribermestamp;
     //            int best_prev_timestamp = 0;    //候选ArmorTracker的最近时间戳
                 auto candiadates = trackers_map.equal_range(armor_id);  // 获取同类型的装甲板
                 for (auto iter = candiadates.first; iter != candiadates.second; ++iter) {

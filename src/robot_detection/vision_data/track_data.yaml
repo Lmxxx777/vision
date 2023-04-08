@@ -2,5 +2,13 @@
 ---
 find_threshold: 20
 lost_threshold: 50
-new_old_threshold: 0.05
+new_old_threshold: 0.1
 
+switch_enemy_threshold: 50
+max_effective_distance: 4
+
+anti_spin_max_r_multiple: 5
+anti_spin_judge_low_thres: 2000
+anti_spin_judge_high_thres: 20000
+max_delta_t: 200
+max_delta_dist: 40

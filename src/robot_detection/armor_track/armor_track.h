@@ -8,7 +8,7 @@
 #include "singer_prediction.h"
 #include "gimbal_control.h"
 
-// #define ANTI_SPIN
+#define ANTI_SPIN
 
 // 目的：通过读取进来的armors，筛选出同ID和上一帧的的装甲板，做跟踪
 
@@ -38,8 +38,6 @@ namespace robot_detection {
         Armor disappear_armor;
     };
 
-
-
     class ArmorTracker
     {
     public:
@@ -54,6 +52,8 @@ namespace robot_detection {
         void reset();
 
         bool initial(std::vector<Armor> find_armors);
+
+        bool switchEnemy(std::vector<Armor> find_armors);
 
         bool selectEnemy(std::vector<Armor> find_armors, double dt);
 
@@ -76,6 +76,8 @@ namespace robot_detection {
         int max_delta_t;                    //使用同一预测器的最大时间间隔(ms)
     //    double max_delta_dist;               // 最大追踪距离
         double spin_T;
+        int vir_max = 20;
+        int vir_num = 0;
         Jump_tracker jump_tracker;
         Disappear_tracker disappear_tracker;
         std::vector<Jump_tracker> jump_trackers;
@@ -84,6 +86,8 @@ namespace robot_detection {
         std::multimap<int, SpinTracker> trackers_map;  // 预测器Map
         std::map<int,SpinHeading> spin_status_map;     // 记录该车小陀螺状态（未知，顺时针，逆时针）
         std::map<int,double> spin_score_map;           // 记录各装甲板小陀螺可能性分数，大于0为逆时针旋转，小于0为顺时针旋转
+        std::deque<Armor> history_armors;
+        const int max_history_len = 4;
         
         bool is_aim_virtual_armor;  // 出现虚拟装甲板后转过去
 
@@ -102,7 +106,7 @@ namespace robot_detection {
         bool locate_target;
 
         int tracker_state;  // 此时跟踪器的状态
-        int tracking_id;  // 跟踪的敌方ID
+        int tracking_id;    // 跟踪的敌方ID
 
         int find_aim_cnt;
         int find_threshold;
@@ -115,6 +119,10 @@ namespace robot_detection {
         double shoot_delay;
 
         double new_old_threshold; // 新旧坐标的距离阈值
+
+        int switch_enemy_cnt;
+        int switch_enemy_threshold;
+        double max_effective_distance;
     };
 
 }

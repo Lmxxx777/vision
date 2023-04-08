@@ -511,6 +511,14 @@ namespace robot_detection{
 
         return (area3) / (area1 + area2 - area3);
     }
+    
+    cv::Point2f AngleSolve::Vector3d2point2f(Eigen::Vector3d src_vector) 
+    {
+        cv::Point2f temp;
+        temp.x = src_vector[0];
+        temp.y = src_vector[1];
+        return temp;
+    }
 
     double AngleSolve::getFlyTime(Eigen::Vector3d &pos)
     {

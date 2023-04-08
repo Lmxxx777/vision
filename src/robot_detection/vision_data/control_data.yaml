@@ -13,7 +13,6 @@ buff_out_h: 0.047
 buff_radius: 0.700
 buff_convex: 0.146
 
-
 self_type: sentry
 
 omni_infantry:

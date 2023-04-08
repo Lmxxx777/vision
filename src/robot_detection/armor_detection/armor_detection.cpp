@@ -1,12 +1,13 @@
 #include "armor_detection.h"
 
-// #define BINARY_SHOW
+#define BINARY_SHOW
 // #define DRAW_LIGHTS_CONTOURS
 // #define DRAW_LIGHTS_RRT
-#define SHOW_NUMROI
+// #define SHOW_NUMROI
 // #define ERROR_DETECTION
 // #define DRAW_ARMORS_RRT
 // #define DRAW_FINAL_ARMOR_S_CLASS
+#define SHOW_NUMROI3
 
 using namespace cv;
 using namespace std;
@@ -315,6 +316,38 @@ namespace robot_detection {
                 candidateArmors[0].grade = 100;
                 finalArmors.emplace_back(candidateArmors[0]);
             }
+#ifdef SHOW_NUMROI3
+            cv::Mat numDst;
+            resize(numROIs[0],numDst,Size(200,300));
+            //        printf("%d",armor.id);
+            imshow("number_show",numDst);
+            //        std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+            //        string file_name = "../data/"+std::to_string(0)+"_"+std::to_string(cnt_count)+".jpg";
+            //        cout<<file_name<<endl;
+            //        imwrite(file_name,numDst);
+            //        cnt_count++;
+#endif
+
+#ifdef SHOW_NUMROI
+        // save number roi
+        // int c = waitKey(100);
+        // cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
+        // threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        // string nn= std::to_string(save_num_cnt);
+        // string path="/home/lmx2/data_list/"+nn+".jpg";
+        // if(c==113){
+
+        //     imwrite(path,numDst);
+        //     save_num_cnt++;
+        // }
+
+        resize(numROIs[0], numROIs[0],Size(200,300));
+        cvtColor(numROIs[0], numROIs[0], cv::COLOR_BGR2GRAY);
+        threshold(numROIs[0], numROIs[0], 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        string name = to_string(finalArmors[0].id) + ":" + to_string(finalArmors[0].confidence*100) + "%";
+        imshow("name", numROIs[0]);
+        // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+#endif
         }
         else
         {
@@ -347,7 +380,37 @@ namespace robot_detection {
                 //2、在缩小roi内就给分，不在不给分（分数占比较低）
                 //3、90度减去装甲板的角度除以90得到比值乘上标准分作为得分
                 //4、在前三步打分之前对装甲板进行高由大到小排序，获取最大最小值然后归一化，用归一化的高度值乘上标准分作为得分
+#ifdef SHOW_NUMROI3
+            cv::Mat numDst;
+            resize(numROIs[i],numDst,Size(200,300));
+            //        printf("%d",armor.id);
+            imshow("number_show",numDst);
+            //        std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+            //        string file_name = "../data/"+std::to_string(0)+"_"+std::to_string(cnt_count)+".jpg";
+            //        cout<<file_name<<endl;
+            //        imwrite(file_name,numDst);
+            //        cnt_count++;
+#endif
+#ifdef SHOW_NUMROI
+        // save number roi
+        // int c = waitKey(100);
+        // cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
+        // threshold(numDst, numDst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        // string nn= std::to_string(save_num_cnt);
+        // string path="/home/lmx2/data_list/"+nn+".jpg";
+        // if(c==113){
 
+        //     imwrite(path,numDst);
+        //     save_num_cnt++;
+        // }
+
+        resize(numROIs[i], numROIs[i],Size(200,300));
+        cvtColor(numROIs[i], numROIs[i], cv::COLOR_BGR2GRAY);
+        threshold(numROIs[i], numROIs[i], 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        string name = to_string(candidateArmors[i].id) + ":" + to_string(candidateArmors[i].confidence*100) + "%";
+        imshow("name", numROIs[i]);
+        // std::cout<<"number:   "<<armor.id<<"   type:   "<<armor.type<<std::endl;
+#endif
                 candidateArmors[i].grade = armorGrade(candidateArmors[i]);
 
                 if (candidateArmors[i].grade > grade_standard)
@@ -501,7 +564,7 @@ namespace robot_detection {
         // std::cout<<numDst.size()<<std::endl;
         numDst = numDst(cv::Rect(cv::Point((warp_width - roi_size.width) / 2, 0), roi_size));
         dnnDetect.img_processing(numDst, numROIs);
-#ifdef SHOW_NUMROI
+#ifdef SHOW_NUMROI2
         // save number roi
         // int c = waitKey(100);
         // cvtColor(numDst, numDst, cv::COLOR_BGR2GRAY);
