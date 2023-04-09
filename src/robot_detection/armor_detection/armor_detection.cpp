@@ -148,23 +148,33 @@ namespace robot_detection {
                 if (0 <= rect.x && 0 <= rect.width  && rect.x + rect.width  <= _src.cols &&
                     0 <= rect.y && 0 <= rect.height && rect.y + rect.height <= _src.rows)
                 {
-                    int sum_r = 0, sum_b = 0;
-                    cv::Mat roi = _src(rect);
-                    // Iterate through the ROI
-                    for (int i = 0; i < roi.rows; i++)
-                    {
-                        for (int j = 0; j < roi.cols; j++)
-                        {
-                            if (cv::pointPolygonTest(contour, cv::Point2f(j + rect.x, i + rect.y), false) >= 0) // 只加正矩形中的轮廓！！！
-                            {
-                                sum_r += roi.at<cv::Vec3b>(i, j)[2];
-                                sum_b += roi.at<cv::Vec3b>(i, j)[0];
-                            }
-                        }
-                    }
+                    // old plan --- waste time
+                    // int sum_r = 0, sum_b = 0;
+                    // cv::Mat roi = _src(rect);
+                    // // Iterate through the ROI
+                    // for (int i = 0; i < roi.rows; i++)
+                    // {
+                    //     for (int j = 0; j < roi.cols; j++)
+                    //     {
+                    //         if (cv::pointPolygonTest(contour, cv::Point2f(j + rect.x, i + rect.y), false) >= 0) // 只加正矩形中的轮廓！！！
+                    //         {
+                    //             sum_r += roi.at<cv::Vec3b>(i, j)[2];
+                    //             sum_b += roi.at<cv::Vec3b>(i, j)[0];
+                    //         }
+                    //     }
+                    // }
                     // std::cout<<sum_r<<"           "<<sum_b<<std::endl;
                     // Sum of red pixels > sum of blue pixels ?
-                    light.lightColor = sum_r > sum_b ? RED : BLUE;
+                    // light.lightColor = sum_r > sum_b ? RED : BLUE;
+
+                    cv::Mat roi = _src(rect);
+                    cv::Mat mask = _binary(rect);
+                    cv::Mat channels[3];
+                    cv::split(roi, channels); // 分离多通道图像的通道
+                    Scalar sum_r = cv::mean(channels[2], mask);
+                    Scalar sum_b = cv::mean(channels[0], mask); 
+                    // cout << "color:" << sum_r[0] << " " << sum_b[0] << endl;
+                    light.lightColor = sum_r[0] > sum_b[0] ? RED : BLUE;
 
                     //enermy_color ==  BLUE;
                     //cout<<"enermy_color  ==  "<<enermy_color<<endl;

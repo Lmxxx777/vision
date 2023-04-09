@@ -165,7 +165,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     Targets = Detect.autoAim(src, enemy_color);
     if (!Targets.empty())
     {
-        // std::cout<<"main get ---"<<Targets[0].id<<"--- target!!!"<<std::endl;
         // std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
     }
     else
@@ -209,6 +208,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_send_data.aim_id = Track.tracking_id;
         vision_send_data.pitch = Track.pitch;
         vision_send_data.yaw = Track.yaw;
+        cv::circle(src,cv::Point(640,20),20,cv::Scalar(0,255,0),-1);
     }
     else
     {
@@ -221,6 +221,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_send_data.aim_id = 0;
         vision_send_data.pitch = Track.AS.ab_pitch;
         vision_send_data.yaw = Track.AS.ab_yaw;
+        cv::circle(src,cv::Point(640,20),20,cv::Scalar(0,0,255),-1);
     }
 
     // send port gimbal message 
