@@ -21,7 +21,7 @@ int main(int argc, char  *argv[])
     vision_data.roll = 0.0;
     vision_data.pitch = 0.0;
     vision_data.yaw = 0.0;
-    vision_data.shoot = 28.0;
+    vision_data.shoot_spd = 28.0;
     vision_data.shoot_sta = 0x21;
 
     // Time

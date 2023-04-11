@@ -1,6 +1,8 @@
 #include "armor_track.h"
-#include <opencv2/calib3d.hpp>
-#include <opencv2/core/eigen.hpp>
+// #include <opencv2/calib3d.hpp>
+// #include <opencv2/core/eigen.hpp>
+
+// #define ANTI_SPIN
 
 namespace robot_detection {
 
@@ -60,6 +62,7 @@ namespace robot_detection {
     {
         if(find_armors.empty())
         {
+            std::cout<<"no track enemy!"<<std::endl;
             return false;
         }
 
@@ -182,7 +185,7 @@ namespace robot_detection {
                 {
                     double dis_tmp = (enemy_armor.world_position - armor.world_position).norm();
 //                    std::cout << "[delta_dist2]: " << dis_tmp << std::endl;
-                    if (armor.id == tracking_id && dis_tmp < same_armor_distance)
+                    if (armor.id == tracking_id && dis_tmp < )
                     {
                         matched = true;
                         //TODO:封装
@@ -476,7 +479,7 @@ namespace robot_detection {
                 for (auto & armor : find_armors)
                 {
                     double dis_tmp = (enemy_armor.world_position - armor.world_position).norm();
-                    if (armor.id == tracking_id && dis_tmp < same_armor_distance)
+                    if (armor.id == tracking_id && dis_tmp < new_old_threshold)
                     {
                         matched = true;
                         KF.initial_KF();
@@ -484,7 +487,7 @@ namespace robot_detection {
                         position_speed << armor.world_position, predicted_enemy.tail(3);
                         KF.setPosAndSpeed(armor.world_position, predicted_enemy.tail(3));
 
-                        Singer.Reset({armor.world_position[0],armor.world_position[1]});
+                        Singer.setXpos({armor.world_position[0],armor.world_position[1]});
 
                         predicted_enemy = position_speed;
                         matched_armor = armor;
@@ -586,8 +589,9 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
+                Singer.Reset({enemy_armor.world_position(0,0),enemy_armor.world_position(1,0)});
+    //            Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(1,0)});
                 std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
-                reset();
                 return false;
             }
             ////////////////Singer predictor//////////////////////////////
@@ -601,8 +605,9 @@ namespace robot_detection {
                                         enemy_armor.world_position,
                                         predicted_position))
             {
-                std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
-                reset();
+                // Singer.Reset({enemy_armor.world_position(0,0),enemy_armor.world_position(1,0)});
+    //            Singer.setXpos({enemy_armor.world_position(0,0),enemy_armor.world_position(1,0)});
+                // std::cerr<<"[predict value illegal!!! Fix in origin value]"<<std::endl;
                 return false;
             }
             ////////////////Singer predictor//////////////////////////////
@@ -634,6 +639,7 @@ namespace robot_detection {
             else
             {
                 locate_target = false;
+                std::cout<<"0"<<std::endl;
             }
             return false;
         }
@@ -643,6 +649,7 @@ namespace robot_detection {
             {
                 t = time;
                 wait_start = false;
+                std::cout<<"5"<<std::endl;
                 return false;
             }
             double dt = seconds_duration (time - t).count();
@@ -650,11 +657,11 @@ namespace robot_detection {
 
             // if(switchEnemy(armors)) { return false; }
 
-            if(!selectEnemy(armors,dt))  { return false; }
+            if(!selectEnemy(armors,dt))  { return false; std::cout<<"1"<<std::endl;}
 
-            if (tracker_state == TRACKING) { spin_detect(); }
+            if (tracker_state == TRACKING) { spin_detect(); std::cout<<"2"<<std::endl;}
 
-            if(!estimateEnemy(dt)) { return false; }
+            if(!estimateEnemy(dt)) { return false; std::cout<<"3"<<std::endl;}
 
             //
             if(is_aim_virtual_armor)
@@ -663,6 +670,7 @@ namespace robot_detection {
                 pitch = rpy[1];
                 yaw   = rpy[2];
                 pitch = round(pitch * 100)/100;
+                std::cout<<"4"<<std::endl;
                 return false;  // TODO: fire or fail
             }
             else
@@ -673,6 +681,10 @@ namespace robot_detection {
                 pitch = round(pitch * 100)/100;
             }
             
+            Eigen::Vector3d rpy = AS.getAngle(enemy_armor.world_position);
+            pitch = rpy[1];
+            yaw   = rpy[2];
+
             return true;
         }
 

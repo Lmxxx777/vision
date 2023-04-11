@@ -124,6 +124,20 @@ void ImuCallback(const robot_msgs::EulerAnglesConstPtr &imu_msg)
     // ROS_INFO("gimbal_roll  is  %lf \n", gimbal_roll);
 }
 
+void C_callback(const robot_msgs::visionConstPtr &imu_msg)
+{
+    // robot_msgs::EulerAngles Euler_angle;
+    // Euler_angle = *imu_msg;
+    // // *imu_msg.unique
+    // gimbal_pitch = Euler_angle.pitch;
+    // gimbal_yaw = Euler_angle.yaw;
+    // gimbal_roll = Euler_angle.roll;
+
+    // ROS_INFO("gimbal_pitch is  %lf \n", gimbal_pitch);
+    // ROS_INFO("gimbal_yaw   is  %lf \n", gimbal_yaw);
+    // ROS_INFO("gimbal_roll  is  %lf \n", gimbal_roll);
+}
+
 void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visionConstPtr &imu_msg)
 {
     //  ---   calculate time   ---
@@ -141,15 +155,22 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // imu
     robot_msgs::vision vision_data;
     vision_data = *imu_msg;
-    int enemy_color = vision_data.id;
+    int enemy_color = vision_data.id;  // TODO: RED 7-me; BLUE 107
     float roll = vision_data.roll;
     float pitch = vision_data.pitch;
     float yaw = vision_data.yaw;
     float quaternion[4];
     for(int i = 0; i<vision_data.quaternion.size(); ++i)
+    {
         quaternion[i] = vision_data.quaternion[i];
-    float bullet_speed = 28;
-    int mode = vision_data.shoot_sta;
+        quaternion[i] = round(quaternion[i] * 1000)/1000;   // TODO: jieduan shuju
+    }
+    float bullet_speed = vision_data.shoot_spd;
+    if(bullet_speed == 0)
+    {
+        bullet_speed = 30;
+    }
+    int mode = vision_data.shoot_sta;   // TODO: 
 
     // TODO: 先验证数据的情况
     // ROS_INFO("gimbal_roll  is  %lf \n", roll);
@@ -182,10 +203,10 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     bool track_bool = false;
 
     // 不开自瞄一直重置跟踪器
-    bool is_need_reset = mode != 0x31 ? true : false;
-    is_need_reset = false;  // TODO:  for test
-    if(is_need_reset)
-        Track.reset();
+    // bool is_need_reset = mode != 0x31 ? true : false;
+    // is_need_reset = false;  // TODO:  for test
+    // if(is_need_reset)
+    //     Track.reset();
 
     track_bool= Track.locateEnemy(src,Targets,now_time);
 
@@ -199,15 +220,17 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
             vision_send_data.target_lock = 0x31;
             // transform.setOrigin(tf::Vector3(Track.enemy_armor.camera_position[0],Track.enemy_armor.camera_position[1],Track.enemy_armor.camera_position[2]));
         }
-        else
+        if(Track.tracker_state == robot_detection::LOSING)
         {
             vision_send_data.fire_command = 0x32;
-            vision_send_data.target_lock = 0x32;
+            vision_send_data.target_lock = 0x31;
             // transform.setOrigin(tf::Vector3(0,0,0));
         }
         vision_send_data.aim_id = Track.tracking_id;
         vision_send_data.pitch = Track.pitch;
         vision_send_data.yaw = Track.yaw;
+        last_pitch = Track.pitch;
+        last_yaw = Track.yaw;
         cv::circle(src,cv::Point(640,20),20,cv::Scalar(0,255,0),-1);
     }
     else
@@ -221,6 +244,9 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_send_data.aim_id = 0;
         vision_send_data.pitch = Track.AS.ab_pitch;
         vision_send_data.yaw = Track.AS.ab_yaw;
+
+        vision_send_data.pitch = last_pitch;
+        vision_send_data.yaw = last_yaw;
         cv::circle(src,cv::Point(640,20),20,cv::Scalar(0,0,255),-1);
     }
 
@@ -285,10 +311,17 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         line(src, vertice_armor_match[i], vertice_armor_match[(i + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
     }
 
-    cv::putText(src,"000  : "+std::to_string(Track.enemy_armor.camera_position[0]),cv::Point2f(0,1024- 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"111  : "+std::to_string(Track.enemy_armor.camera_position[1]),cv::Point2f(0,1024- 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"222  : "+std::to_string(Track.enemy_armor.camera_position[2]),cv::Point2f(0,1024-120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"camera_position",cv::Point2f(0,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.camera_position[0]),cv::Point2f(0,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.camera_position[1]),cv::Point2f(0,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.camera_position[2]),cv::Point2f(0,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     
+    cv::putText(src,"world_position",cv::Point2f(1280 - 200,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.world_position[0]),cv::Point2f(1280 - 200,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.world_position[1]),cv::Point2f(1280 - 200,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.world_position[2]),cv::Point2f(1280 - 200,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    
+
     // 用预测位置为中心点，选择的装甲板画框
     cv::Point2f armor_singer_center = Track.AS.imu2pixel(Track.predicted_position);
     // armor_singer_center.y = armor_match_center.y;

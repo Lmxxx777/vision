@@ -8,7 +8,6 @@
 #include "singer_prediction.h"
 #include "gimbal_control.h"
 
-// #define ANTI_SPIN
 
 // 目的：通过读取进来的armors，筛选出同ID和上一帧的的装甲板，做跟踪
 

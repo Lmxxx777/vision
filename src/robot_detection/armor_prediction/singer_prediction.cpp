@@ -4,7 +4,7 @@ namespace robot_detection{
 
     Skalman::Skalman()
     {
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("../other/predict_data.yaml", cv::FileStorage::READ);
         shoot_delay = (double)fs["shoot_delay"];
         error_distance = (double)fs["error_distance"];
         fs.release();
@@ -14,15 +14,12 @@ namespace robot_detection{
                 0,0,0,1,0,0;
 
         //init R
-        R << 5e-4, 0,
-                0, 5e-4;
-
-        //init Xk_1
-        Xk_1 << 0,0.1,0,
-                0,0.1,0;
+        R << 5e-5, 0,
+                0, 5e-5;
 
         //init Xk
-        //    Xk = Xk_1;
+        Xk << 0,0.1,0,
+                0,0.1,0;
 
         //init P
         double r11 = R(0,0);
@@ -43,7 +40,7 @@ namespace robot_detection{
         Zk << 0.1,0.1;
 
         //init lamda
-        Vk = Zk - H*Xk_1;
+        Vk = Zk - H*Xk;
         _Sk = 0.5*Vk*Vk.transpose();
         Sk = H*P*H.transpose() + R;
         lamda = std::max(1.,_Sk.trace()/Sk.trace());
@@ -52,12 +49,9 @@ namespace robot_detection{
 
     void Skalman::Reset()
     {
-        //init Xk_1
-        Xk_1 << 0,0.1,0,
-                0,0.1,0;
-
         //init Xk
-        //    Xk = Xk_1;
+        Xk << 0,0.1,0,
+                0,0.1,0;
 
         //init P
         double r11 = R(0,0);
@@ -108,8 +102,8 @@ namespace robot_detection{
 
     void Skalman::setXpos(const Eigen::Vector2d &Xpos)
     {
-        Xk_1 << Xpos(0,0),0.1,0,
-                Xpos(1,0),0.1,0;
+        Xk(0,0) = Xpos(0,0);
+        Xk(3,0) = Xpos(1,0);////0409��ʱ����Xk(1,0) = Xpos(1,0);
         last_x[0] = Xpos(0,0);
         last_x[1] = Xpos(1,0);
     }
@@ -117,7 +111,6 @@ namespace robot_detection{
     void Skalman::PredictInit(const double &deleta_t)
     {
         T = deleta_t;
-        //    std::cout<<"time_T:"<<(1-exp(-alefa*T))/alefa<<std::endl;
 
         //init F
         Eigen::Matrix<double,3,3> Fx;
@@ -206,14 +199,18 @@ namespace robot_detection{
         Zk = measure;
         Vk = Zk - H*Xk_1;
         _Sk = (lamda*Vk*Vk.transpose())/(1+lamda);
-        Sk = H*P*H.transpose() + R;
+        Sk = H*(F*P*F.transpose() + W)*H.transpose() + R;
+        rk = fabs(Vk.transpose()*Sk.inverse()*Vk);
+        rk = rk > 10 ? 10 : rk;
+            std::cout<<"[rk    ]:"<<rk<<std::endl;
+
         lamda = std::max(1.,_Sk.trace()/Sk.trace());
-        //    std::cout<<"lamda:"<<lamda<<std::endl;
-        P = lamda*((F * P * F.transpose()) + W);
+            std::cout<<"[lamda ]:"<<lamda<<std::endl;
+        P = lamda*(F * P * F.transpose()) + W;
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Xk = Xk_1 + K * (Zk - H * Xk_1);
         P = (Eigen::Matrix<double, 6, 6>::Identity() - K * H) * P;
-        return Xk_1;
+        return Xk;
     }
 
     bool Skalman::SingerPrediction(const double &dt,
@@ -239,23 +236,19 @@ namespace robot_detection{
         Eigen::Matrix<double,6,1> predicted_result = predict(true);
         //std::cout<<"result:"<<predicted_result<<std::endl;
         //! filter for result, inhibit infinite change
-        //    double predicted_x = predicted_result(0,0);
-        //    double predicted_y = predicted_result(3,0);//no need to calculate with filter
-        //    double predicted_z = imu_position(2,0);
         predicted_xyz[predict_x1] = filter(last_x[0],predicted_result(0,0),x1);
         predicted_xyz[predict_x2] = filter(last_x[1],predicted_result(3,0),x2);
         predicted_xyz[constant_x] = imu_position(constant_x,0);
-        //    predicted_x = filter(last_x1,predicted_x,x1);
-        //    predicted_y = filter(last_x2,predicted_y,x2);
-        //    last_x1 = predicted_xyz[predict_x1];
-        //    last_x2 = predicted_xyz[predict_x2];
         last_x[0] = predicted_xyz[predict_x1];
         last_x[1] = predicted_xyz[predict_x2];
 
         //    predicted_position << predicted_x,predicted_y,predicted_z;
         predicted_position = predicted_xyz;
-
-        if (!finite(predicted_position.norm()) || predicted_position.norm() - imu_position.norm() > error_distance){
+    //    printf("[predict_pos  ]:%lf\n",predicted_position.norm());
+    //    printf("[world_pos    ]:%lf\n",imu_position.norm());
+    //    printf("[erro_distance]:%lf\n",error_distance);
+    //    printf("[shoot_delay  ]:%lf\n",shoot_delay);
+        if (!finite(predicted_position.norm()) || fabs(predicted_position.norm() - imu_position.norm()) > error_distance){
             predicted_position = imu_position;
             return false;
         }
@@ -267,8 +260,9 @@ namespace robot_detection{
     {
         double predicted_offset = last - origin;
         double predicted_diff = current - last;
-        return (1-pow(TANH2(predicted_diff),2))*current+(pow(TANH2(predicted_diff),2))*
-                                                        ((1-pow(TANH_HALF(predicted_offset),2))*last+(pow(TANH_HALF(predicted_offset),2))*origin);
+        return (1-pow(TANH2(predicted_diff, rk*rk),2))*current+(pow(TANH2(predicted_diff, rk*rk),2))*
+                                                            ((1-pow(TANH_HALF(predicted_offset),2))*last+(pow(TANH_HALF(predicted_offset),2))*origin);
+    // return (1-pow(TANH2(predicted_diff),2))*current+(pow(TANH2(predicted_diff),2))*
+        //((1-pow(TANH_HALF(predicted_offset),2))*last+(pow(TANH_HALF(predicted_offset),2))*origin);
     }
-
 }
