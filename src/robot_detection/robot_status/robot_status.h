@@ -1,14 +1,17 @@
 #pragma once
-//opencv
 #include <opencv2/opencv.hpp>
 
-//basic parameter
-#define GRAVITY 9.78
-#define SMALL_AIR_K 0.01903
-#define BIG_AIR_K 0.00556
-#define BIG_LIGHT_AIR_K 0.00530
-
 namespace robot_detection {
+    //basic parameter
+    #define GRAVITY 9.78
+    #define SMALL_AIR_K 0.01903
+    #define BIG_AIR_K 0.00556
+    #define BIG_LIGHT_AIR_K 0.00530
+
+    #define SHOOT_DELAY 0.1
+
+    #define POINT_DIST(p1,p2) std::sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y))
+    #define COLOR(str) std::strcmp(str.c_str(),"RED") == 0? RED : BLUE
 
     using seconds_duration = std::chrono::duration<double>;
     using milliseconds_duration = std::chrono::duration<double,std::milli>;
@@ -17,7 +20,8 @@ namespace robot_detection {
 
     //robot basic classes
     enum EnemyColor { RED = 1, BLUE = 2 };
-    enum EnemyType  { SMALL = 1, BIG = 2 };
+    enum EnemyType  { SMALL = 1, BIG = 2, BUFF_R = 3, BUFF_NO = 4, BUFF_YES = 5};
+    enum BuffType   { CONST_SPEED = 1, VARIABLE_SPEED= 2};
     enum EnemyState { RUN = 1, SPIN = 2};
     enum SpinHeading { UNKNOWN, CLOCKWISE, COUNTER_CLOCKWISE };
 

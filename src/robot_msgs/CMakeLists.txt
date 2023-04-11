@@ -14,6 +14,7 @@ add_message_files(
   FILES
   EulerAngles.msg
   vision.msg
+  vision_pts.msg
   control.msg
   sc_rc_msg.msg
   robot_ctrl.msg

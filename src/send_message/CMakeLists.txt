@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(Ceres REQUIRED)
+# find_package(Ceres REQUIRED)
 # find_package(matplotlib_cpp REQUIRED)
 
 catkin_package(

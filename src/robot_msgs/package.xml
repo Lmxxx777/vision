@@ -19,6 +19,7 @@
     <build_depend>message_generation</build_depend>
     <build_depend>EulerAngles</build_depend>
     <build_depend>vision</build_depend>
+    <build_depend>vision_pts</build_depend>
     <build_depend>control</build_depend>
     <build_depend>sc_rc_msg</build_depend>
     <build_depend>robot_ctrl</build_depend>
@@ -29,6 +30,7 @@
     <run_depend>EulerAngles</run_depend>
     <run_depend>message_runtime</run_depend>
     <run_depend>vision</run_depend>
+    <run_depend>vision_pts</run_depend>
     <run_depend>control</run_depend>
     <run_depend>sc_rc_msg</run_depend>
     <run_depend>robot_ctrl</run_depend>

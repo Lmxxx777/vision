@@ -5,3 +5,4 @@ float32 yaw
 float32 pitch
 int8 target_lock
 int8 fire_command
+int8 aim_id

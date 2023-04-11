@@ -337,7 +337,7 @@ namespace robomaster
           vision_pubmsg.yaw = vision_msg_.yaw;
           vision_pubmsg.pitch = vision_msg_.pitch;
           vision_pubmsg.roll = vision_msg_.roll;
-          vision_pubmsg.shoot = vision_msg_.shoot;
+          vision_pubmsg.shoot_spd = vision_msg_.shoot;
           vision_pubmsg.shoot_sta = vision_msg_.shoot_sta;
           vision_pubmsg.quaternion.resize(4);//设置自定义消息数组的长度
           for (int i = 0; i < 4; i++)
