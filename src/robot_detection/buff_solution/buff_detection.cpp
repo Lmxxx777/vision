@@ -7,7 +7,7 @@ namespace robot_detection
 {
     BuffDetector::BuffDetector()
     {
-        cv::FileStorage fs("/home/lmx2/HJ_SENTRY_VISION/src/robot_detection/vision_data/detect_data.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", cv::FileStorage::READ);
 
         // binary_thresh
         binary_threshold = (int)fs["binary_threshold"];   // blue 100  red  70
