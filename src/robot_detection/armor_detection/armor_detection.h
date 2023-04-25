@@ -68,6 +68,9 @@ namespace robot_detection {
         std::vector<Armor> autoAim(const cv::Mat &src, int color); //将最终目标的坐标转换到摄像头原大小的
     private:
         int binThresh;
+        int redBinThresh;
+        int blueBinThresh;
+
         int enemy_color;
         int categories;
 
@@ -105,6 +108,7 @@ namespace robot_detection {
         double thresh_confidence;
 
         cv::Mat _src;  // 裁剪src后的ROI
+        cv::Mat _gray;
         cv::Mat _binary;
 
         Armor lastArmor;

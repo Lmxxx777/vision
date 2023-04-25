@@ -43,6 +43,7 @@ namespace robot_detection {
         cv::Mat _src;
         float pitch;
         float yaw;
+        float roll;
         chrono_time t;
         bool wait_start;
 
@@ -64,8 +65,11 @@ namespace robot_detection {
         bool updateSpinScore();
         void spin_detect();
 
-        double last_r = 0.35;
+        void show();  
+
+        double last_r;
         Eigen::Vector3d last_position;
+        bool is_target_move = false;
         bool is_vir_armor = false;
         bool is_anti = false;
         int last_final_armors_size;
@@ -75,8 +79,8 @@ namespace robot_detection {
         int max_delta_t;                    //使用同一预测器的最大时间间隔(ms)
     //    double max_delta_dist;               // 最大追踪距离
         double spin_T;
-        int vir_max = 20;
-        int vir_num = 0;
+        int vir_max;
+        int vir_num;
         Jump_tracker jump_tracker;
         Disappear_tracker disappear_tracker;
         std::vector<Jump_tracker> jump_trackers;
@@ -86,9 +90,9 @@ namespace robot_detection {
         std::map<int,SpinHeading> spin_status_map;     // 记录该车小陀螺状态（未知，顺时针，逆时针）
         std::map<int,double> spin_score_map;           // 记录各装甲板小陀螺可能性分数，大于0为逆时针旋转，小于0为顺时针旋转
         std::deque<Armor> history_armors;
-        const int max_history_len = 4;
+        int max_history_len;
         
-        bool is_aim_virtual_armor;  // 出现虚拟装甲板后转过去
+        bool is_aim_virtual_armor;  // first vir出现虚拟装甲板后转过去
 
         Armor enemy_armor;//最终选择的装甲板
         Armor real_armor; // virtual armor state, real armor
@@ -119,9 +123,24 @@ namespace robot_detection {
 
         double new_old_threshold; // 新旧坐标的距离阈值
 
-        int switch_enemy_cnt;
+        int switch_armor_threshold;
+        int switch_armor_cnt;
+
+        // int switch_enemy_cnt;
         int switch_enemy_threshold;
         double max_effective_distance;
+
+        bool is_switch_time_set;
+        chrono_time last_change_time;
+        double switch_time_threshold;
+
+///---------------------switchEnemy---------------------
+    int switch_enemy_cnt[5];
+    bool flag[5];
+    Armor temp[5];
+    double delta_distance;
+    double hero_distance;
+//----------------------------------------------------------        
     };
 
 }

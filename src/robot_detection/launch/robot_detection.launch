@@ -18,7 +18,7 @@
   </node>
 
   <node 
-    name="mv_camera_sub" 
+    name="vision" 
     pkg="robot_detection" 
     type="robot_detection" 
     output="screen"

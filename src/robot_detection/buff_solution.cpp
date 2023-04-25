@@ -83,7 +83,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_data.quaternion[2],
         vision_data.quaternion[3],
     };
-    float bullet_speed = vision_data.shoot;
+    float bullet_speed = vision_data.shoot_spd;
     int mode = vision_data.shoot_sta;
 
     bullet_speed = 28;
@@ -116,7 +116,7 @@ int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
 
-    ros::init(argc,argv,"mv_camera_sub");
+    ros::init(argc,argv,"vision");
     ros::NodeHandle nh;
     vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
 

@@ -123,15 +123,18 @@ namespace robot_detection{
     Eigen::Vector3d AngleSolve::cam2imu(Vector3d cam_pos)
     {
         // cam 2 imu(init),through test get, xyz-rpy
-        Vector3d pos_tmp;
 
+        // TODO: 相机坐标系下加偏置
+        cam_pos += center_offset_position;
+
+        Vector3d pos_tmp;
         // 左右手系，单靠旋转矩阵转换不了，与其矩阵运算不如直接赋值
         // pos_tmp = RotationMatrix_cam2imu * cam_pos;
         pos_tmp = {cam_pos[0],cam_pos[2],-cam_pos[1]};
         // std::cout<<"cam_pos: "<<cam_pos.transpose()<<std::endl;
 
         Vector3d imu_pos;
-        imu_pos += center_offset_position;
+        // imu_pos += center_offset_position;
         imu_pos = RotationMatrix_imu * pos_tmp;
         // 加上两个坐标系的中心点的偏移量，先旋转后平移
 
@@ -143,11 +146,12 @@ namespace robot_detection{
     {
         Vector3d tmp_pos;
         tmp_pos = RotationMatrix_imu.inverse() * imu_pos;
-        tmp_pos -= center_offset_position;
+        // tmp_pos -= center_offset_position;
 
         Vector3d cam_pos;
         // cam_pos = RotationMatrix_cam2imu.inverse() * tmp_pos;
         cam_pos = {tmp_pos[0],-tmp_pos[2],tmp_pos[1]};
+        cam_pos -= center_offset_position;
         return cam_pos;
     }
 
@@ -199,6 +203,8 @@ namespace robot_detection{
         // -----------要水平距离的融合，否则计算的距离会少，在视野边缘处误差会大----------
         float x = (float)sqrt(Pos[0]*Pos[0]+ Pos[1]*Pos[1]);
 
+        // float x = (float)sqrt(Pos[0]*Pos[0]);
+
         float y_temp, y_actual, dy;
         float a;
         y_temp = y;
@@ -212,9 +218,9 @@ namespace robot_detection{
             if (fabsf(dy) < 0.00001) {
                 break;
             }
-            printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
+            // printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,y_temp,dy);
         }
-        pitch = a;
+        pitch = a*180/3.1415926535;
         // return Vector3d(Pos[0],-y_temp,Pos[2]);  // cam
        return Vector3d(Pos[0],Pos[1],y_temp);  // imu
     }
@@ -300,10 +306,12 @@ namespace robot_detection{
     {
         
         Eigen::Vector3d rpy;
-        rpy[2] = -atan2(Pos[0],Pos[1]) / CV_PI*180.0;
+        rpy[2] = atan2(Pos[1],Pos[0]) / CV_PI*180.0 - 90;
+        rpy[2] = -atan2(Pos[0],Pos[1]) / CV_PI*180.0 ;
+
         rpy[1] = atan2(Pos[2],Pos[1]) / CV_PI*180.0;
         // rpy[1] = 0;
-        rpy[0] = atan2(Pos[0],Pos[1]) / CV_PI*180.0;
+        rpy[0] = atan2(Pos[2],Pos[0]) / CV_PI*180.0;
         // rpy[2] = -atan2(Pos[2],Pos[0]) / CV_PI*180.0;
         // rpy[1] = -(atan2(Pos[1],Pos[0]) / CV_PI*180.0-90);
         // rpy[0] = ab_pitch;
@@ -315,17 +323,115 @@ namespace robot_detection{
         return pos.norm() / bullet_speed;
     }
 
-    Eigen::Vector3d AngleSolve::getAngle(Eigen::Vector3d predicted_position)
+    Eigen::Vector3d AngleSolve::getAngle(Eigen::Vector3d predicted_position, Eigen::Vector3d &world_dropPosition)
     {
         double pitch;
-        Vector3d world_dropPosition;
+        // Vector3d world_dropPosition;
         world_dropPosition = airResistanceSolve(predicted_position,pitch);//calculate gravity and air resistance
         Eigen::Vector3d rpy = yawPitchSolve(world_dropPosition);//get need yaw and pitch
 
+
+
+        rpy[1] = pitch;
+        
         rpy[0] += gimbal_offset_angle[0];
         rpy[1] += gimbal_offset_angle[1];
         rpy[2] += gimbal_offset_angle[2];
 
         return rpy;
     }
+
+        bool AngleSolve::pointsInLine(cv::Point2f p1, cv::Point2f p2, cv::Point2f p3, double error, int type)
+    {
+        if(type)
+        {
+            // 斜率
+            if(fabs((p3.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p3.x - p1.x)) <= error)
+                return true;
+            else
+                return false;
+        }
+        else
+        {
+            // 夹角
+            if(fabs(atan2(p2.y - p1.y, p2.x - p1.x)/CV_PI*180.0 - atan2(p3.y - p1.y, p3.x - p1.x)/CV_PI*180.0) <= error)
+                return true;
+            else
+                return false;
+        }
+    }
+
+    bool AngleSolve::circleLeastFit(const std::vector<cv::Point2f> &points, double &center_x, double &center_y, double &radius)
+    {
+        center_x = 0.0f;
+        center_y = 0.0f;
+        radius = 0.0f;
+        if (points.size() < 3)
+        {
+            return false;
+        }
+
+        double sum_x = 0.0f, sum_y = 0.0f;
+        double sum_x2 = 0.0f, sum_y2 = 0.0f;
+        double sum_x3 = 0.0f, sum_y3 = 0.0f;
+        double sum_xy = 0.0f, sum_x1y2 = 0.0f, sum_x2y1 = 0.0f;
+
+        int N = points.size();
+        for (int i = 0; i < N; i++)
+        {
+            double x = points[i].x;
+            double y = points[i].y;
+            double x2 = x * x;
+            double y2 = y * y;
+            sum_x += x;
+            sum_y += y;
+            sum_x2 += x2;
+            sum_y2 += y2;
+            sum_x3 += x2 * x;
+            sum_y3 += y2 * y;
+            sum_xy += x * y;
+            sum_x1y2 += x * y2;
+            sum_x2y1 += x2 * y;
+        }
+
+        double C, D, E, G, H;
+        double a, b, c;
+
+        C = N * sum_x2 - sum_x * sum_x;
+        D = N * sum_xy - sum_x * sum_y;
+        E = N * sum_x3 + N * sum_x1y2 - (sum_x2 + sum_y2) * sum_x;
+        G = N * sum_y2 - sum_y * sum_y;
+        H = N * sum_x2y1 + N * sum_y3 - (sum_x2 + sum_y2) * sum_y;
+        a = (H * D - E * G) / (C * G - D * D);
+        b = (H * C - E * D) / (D * D - G * C);
+        c = -(a * sum_x + b * sum_y + sum_x2 + sum_y2) / N;
+
+        center_x = a / (-2);
+        center_y = b / (-2);
+        radius = std::sqrt(a * a + b * b - 4 * c) / 2;
+        return true;
+    }
+
+    // count IoU
+    double AngleSolve::countArmorIoU(Armor armor1, Armor armor2)
+    {
+        double area1 = armor1.size.area();
+        double area2 = armor2.size.area();
+
+        std::vector<cv::Point2f> cross_points;
+        cv::rotatedRectangleIntersection(armor1, armor2, cross_points);
+
+        double area3 = cv::contourArea(cross_points);
+
+        return (area3) / (area1 + area2 - area3);
+    }
+    
+    cv::Point2f AngleSolve::Vector3d2point2f(Eigen::Vector3d src_vector) 
+    {
+        cv::Point2f temp;
+        temp.x = src_vector[0];
+        temp.y = src_vector[1];
+        return temp;
+    }
+
 }

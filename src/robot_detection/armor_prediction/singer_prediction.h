@@ -7,18 +7,25 @@
 
 namespace robot_detection {
 
-    // #define TANH2(x) (exp(2.5*x)-exp(-2.5*x))/(exp(2.5*x)+exp(-2.5*x))
-    #define TANH2(x, rk) (exp(rk*x)-exp(-rk*x))/(exp(rk*x)+exp(-rk*x))
-    #define TANH_HALF(x) (exp(1.1*x)-exp(-1.1*x))/(exp(1.1*x)+exp(-1.1*x))
+    // // #define TANH2(x) (exp(2.5*x)-exp(-2.5*x))/(exp(2.5*x)+exp(-2.5*x))
+    // #define TANH2(x, rk) (exp(rk*x)-exp(-rk*x))/(exp(rk*x)+exp(-rk*x))
+    // #define TANH_HALF(x) (exp(1.1*x)-exp(-1.1*x))/(exp(1.1*x)+exp(-1.1*x))
+
+#define TANH1(x) (exp(5.*x)-exp(-5.*x))/(exp(5.*x)+exp(-5.*x))
+#define TANH2(x) (exp(15.*x)-exp(-15.*x))/(exp(15.*x)+exp(-15.*x))
+
 
     //二维Singer模型
     class Skalman
     {
+        double x1;
+        double x2;
         double shoot_delay=0.01;
         double alefa = 1.0/30.0;//目标机动频率
         double Sigmaq = 0.01;//目标加速度标准差，Singer模型假设目标加速度符合均值为零的高斯分布
         double initT = 0.01;//用来初始化初始协方差矩阵的采样时间间隔（估算出来的）
         double lamda;//渐消因子，减小滤波发散问题
+        double lamda_temp;
         double rk;//卡方检验
         Eigen::Matrix<double, 6, 6> F;//状态转移矩阵
         Eigen::Matrix<double, 6, 6> W;//预测方程过程噪声
@@ -37,7 +44,7 @@ namespace robot_detection {
     public:
         double error_distance;
         double T = 0;//采样周期T，即前后两次预测帧相隔的时间
-        double last_x[2] = {0,0};
+        double last_dx[2] = {0,0};
         Eigen::Vector3d predicted_xyz = {0,0,0};
 
         Skalman();

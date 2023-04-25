@@ -4,6 +4,7 @@
 namespace robot_detection {
     //basic parameter
     #define GRAVITY 9.78
+    // #define SMALL_AIR_K 0.000001
     #define SMALL_AIR_K 0.01903
     #define BIG_AIR_K 0.00556
     #define BIG_LIGHT_AIR_K 0.00530

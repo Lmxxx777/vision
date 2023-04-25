@@ -15,6 +15,8 @@ class KalmanFilter {
         Eigen::Matrix<double, 3, 3> R;    // 测量噪声偏差，(系统搭建好以后，通过测量统计实验获得)
         Eigen::Matrix<double, 6, 6> P;    // 估计误差协方差
 
+        std::string self_type = "KalmanFilter";
+
         // Priori error estimate covariance matrix
         Eigen::Matrix<double, 6, 6> P_pre;
         // Posteriori error estimate covariance matrix

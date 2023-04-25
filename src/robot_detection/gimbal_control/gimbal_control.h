@@ -8,9 +8,6 @@ namespace robot_detection{
     class AngleSolve : public robot_state
     {
     public:
-        AngleSolve();
-
-        void init(float r, float p, float y, float quat[4], float speed);
 
         float big_w;
         float big_h;
@@ -40,6 +37,15 @@ namespace robot_detection{
         Eigen::Matrix<double,3,3> rv;
         Eigen::Matrix<double,3,3> rotated_matrix;
         Eigen::Matrix<double,3,3> coordinate_matrix;
+
+
+        AngleSolve();
+
+        void init(float r, float p, float y, float quat[4], float speed);
+
+        Eigen::Matrix3d eulerAnglesToRotationMatrix(Eigen::Vector3d &theta);
+        Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta);
+        Eigen::Matrix3d quaternionToRotationMatrix(float quaternion[4]);
         
         Eigen::Vector3d pnpSolve(cv::Point2f *p, int type);
 
@@ -58,19 +64,16 @@ namespace robot_detection{
         Eigen::Vector3d buff2imu(Eigen::Vector3d buff_pos);
         double buff_scale_ratio;
 
-        Eigen::Vector3d getAngle(Eigen::Vector3d predicted_position);
+        Eigen::Vector3d getAngle(Eigen::Vector3d predicted_position, Eigen::Vector3d &world_dropPosition);
         Eigen::Vector3d airResistanceSolve(Eigen::Vector3d Pos, double &pitch);//consider gravity asn air resistance
         float BulletModel(float x, float v, float angle);
+        double getFlyTime(Eigen::Vector3d &pos);
         Eigen::Vector3d yawPitchSolve(Eigen::Vector3d &Pos);
 
-        Eigen::Matrix3d eulerAnglesToRotationMatrix(Eigen::Vector3d &theta);
-        Eigen::Matrix3d eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta);
-        Eigen::Matrix3d quaternionToRotationMatrix(float quaternion[4]);
         bool pointsInLine(cv::Point2f p1, cv::Point2f p2, cv::Point2f p3, double error, int type);  // 三点是否在误差允许内为一条直线，type的值为1表示斜率，0表示夹角
         bool circleLeastFit(const std::vector<cv::Point2f> &points, double &center_x, double &center_y, double &radius);  // 对二维平面点集拟合成圆
         double countArmorIoU(Armor armor1, Armor armor2);   // 输出像素坐标系内两旋转矩形的交并比
         cv::Point2f Vector3d2point2f(Eigen::Vector3d src_vector);
-        double getFlyTime(Eigen::Vector3d &pos);
     };
 
 }

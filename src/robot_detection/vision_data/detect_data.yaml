@@ -3,7 +3,11 @@
 # enemy_color
 enemy_color: BLUE
 # binary_thresh
-binThresh: 120
+binThresh: 80
+
+redBinThresh: 50
+blueBinThresh: 150
+
 # light_judge_condition
 light_max_angle: 45.0
 light_min_hw_ratio: 1
@@ -30,5 +34,5 @@ id_grade_ratio: 0.6
 near_grade_ratio: 0.2
 height_grade_ratio: 0.2
 # thresh_confidence
-thresh_confidence: 0.90
-categories: 6
+thresh_confidence: 0.9
+categories: 7

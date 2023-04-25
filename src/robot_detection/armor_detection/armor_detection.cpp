@@ -23,6 +23,8 @@ namespace robot_detection {
         enemy_color = COLOR(((string)fs["enemy_color"]));
         //binary_thresh
         binThresh = (int)fs["binThresh"];   // blue 100  red  70
+        redBinThresh = (int)fs["redBinThresh"];
+        blueBinThresh = (int)fs["blueBinThresh"];
 
         //light_judge_condition
         light_max_angle = (double)fs["light_max_angle"];
@@ -66,9 +68,9 @@ namespace robot_detection {
         src.copyTo(_src);
 
         //二值化
-        Mat gray;
-        cvtColor(_src,gray,COLOR_BGR2GRAY);
-        threshold(gray,_binary,binThresh,255,THRESH_BINARY);
+        // Mat gray;
+        cvtColor(_src,_gray,COLOR_BGR2GRAY);
+        threshold(_gray,_binary,binThresh,255,THRESH_BINARY);
 #ifdef BINARY_SHOW
         imshow("_binary",_binary);
 #endif //BINARY_SHOW
@@ -169,15 +171,17 @@ namespace robot_detection {
 
                     cv::Mat roi = _src(rect);
                     cv::Mat mask = _binary(rect);
-                    cv::Mat channels[3];
-                    cv::split(roi, channels); // 分离多通道图像的通道
-                    Scalar sum_r = cv::mean(channels[2], mask);
-                    Scalar sum_b = cv::mean(channels[0], mask); 
-                    Scalar sum_g = cv::mean(channels[1], mask); 
+                    // cv::Mat channels[3];
+                    // cv::split(roi, channels); // 分离多通道图像的通道
+                    // Scalar sum_r = cv::mean(channels[2], mask);
+                    // Scalar sum_b = cv::mean(channels[0], mask); 
+                    // Scalar sum_g = cv::mean(channels[1], mask); 
+
+                    Scalar sum = cv::mean(roi,mask);
                     // cout << "color: red-" << sum_r[0] << " | blue-" << sum_b[0] << " | green-" << sum_g[0] << endl;
 
-                    light.lightColor = sum_r[0] > sum_b[0] ? RED : BLUE;
-
+                    light.lightColor = sum[2] > sum[0] ? RED : BLUE;
+                    // TODO: 分辨红蓝还有紫色，实测得出，紫色和蓝色区别较小，选择通过装甲板大小和数字类别排除己方无敌基地
                     // if(sum_r[0]>sum_b[0])
                     // {
                     //     light.lightColor = RED;
@@ -487,11 +491,40 @@ namespace robot_detection {
         if(!candidateLights.empty())
             candidateLights.clear();
 
+        if(color == RED)
+        {
+            binThresh = redBinThresh;
+        }
+        else if(color == BLUE)
+        {
+            binThresh = blueBinThresh;
+        }
+
+        // std::cout<<"binThreshold: "<<binThresh<<std::endl;
+
         //do autoaim task
         setImage(src);
         findLights(color);
         matchLights();
         chooseTarget();
+
+        // 遍历vector并删除不符合要求的元素  for sentry and infantry
+        auto it = finalArmors.begin();
+        while (it != finalArmors.end()) 
+        {
+            if ((*it).id == 8 && (*it).type == BIG) // 前哨站小装甲板
+            {
+                it = finalArmors.erase(it);
+            } 
+            else if (((*it).id == 1 || (*it).id == 7) && (*it).type == SMALL)  // 基地和1号大装甲板
+            {
+                it = finalArmors.erase(it);
+            }
+            else 
+            {
+                ++it;
+            }
+        }
 
         return finalArmors;
     }
@@ -543,7 +576,7 @@ namespace robot_detection {
         ////////靠近图像中心打分项目//////////////////////
         // 靠近中心，与中心做距离，设定标准值，看图传和摄像头看到的画面的差异
         int near_grade;
-        double pts_distance = POINT_DIST(checkArmor.center, Point2f(640, 512));
+        double pts_distance = POINT_DIST(checkArmor.center, Point2f(640.0, 512.0));
         near_grade = pts_distance/near_standard < 1 ? 100 : (near_standard/pts_distance) * 100;
         ////////end//////////////////////////////////
 
@@ -570,7 +603,7 @@ namespace robot_detection {
         const int warp_height = 30;
         const int warp_width = armor.type == SMALL ? small_armor_width : large_armor_width;
         // Number ROI size
-        const cv::Size roi_size(20, 30);
+        const cv::Size roi_size(22, 30);
 
         const int top_light_y = (warp_height - light_length) / 2;
         const int bottom_light_y = top_light_y + light_length;
@@ -583,7 +616,7 @@ namespace robot_detection {
                 cv::Point(0, top_light_y),
         };
         const Mat& rotation_matrix = cv::getPerspectiveTransform(armor.armor_pt4, target_vertices);
-        cv::warpPerspective(_src, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
+        cv::warpPerspective(_gray, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
 
         // Get ROI
         // std::cout<<numDst.size()<<std::endl;

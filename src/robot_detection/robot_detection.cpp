@@ -7,15 +7,18 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CompressedImage.h>
-
-#include <tf/transform_broadcaster.h>
+// tf2
+// #include <tf/transform_broadcaster.h>  // old tf , need to use tf2
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/PointStamped.h>
-
+// message_filters for time 
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
-// msg
+// msg by diy
 #include "robot_msgs/vision.h"
 #include "robot_msgs/robot_ctrl.h"
 #include "robot_msgs/EulerAngles.h"
@@ -49,6 +52,9 @@ double last_pitch, last_yaw;
 double delta_pitch, delta_yaw;
 double gimbal_pitch, gimbal_yaw, gimbal_roll;
 double offset_x, offset_y, offset_z;
+
+tf2_ros::TransformBroadcaster tfb;
+geometry_msgs::TransformStamped transformStamped;
 
 ros::Publisher vision_pub_;
 ros::Publisher aim_point_pub_;
@@ -164,11 +170,13 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     {
         quaternion[i] = vision_data.quaternion[i];
         quaternion[i] = round(quaternion[i] * 1000)/1000;   // TODO: jieduan shuju
+        // std::cout<<quaternion[i]<<" ";
     }
+    // std::cout<<std::endl;
     float bullet_speed = vision_data.shoot_spd;
-    if(bullet_speed == 0)
+    if(bullet_speed <= 0)
     {
-        bullet_speed = 30;
+        bullet_speed = 27;
     }
     int mode = vision_data.shoot_sta;   // TODO: 
 
@@ -181,9 +189,20 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("mode         is  %x  \n", mode);
 
     // TODO: enemy color set 1-RED 2-BLUE
-    enemy_color = 2; 
+    // enemy_color = 2; 
+    int color;
+    // std::cout<<"enemy_color:  "<<enemy_color<<std::endl;
+    if(enemy_color == 7)
+    {
+        color = robot_detection::BLUE;
+    }
+    else if(enemy_color == 107)
+    {
+        color = robot_detection::RED;
+    }
+
     // detecting
-    Targets = Detect.autoAim(src, enemy_color);
+    Targets = Detect.autoAim(src, color);
     if (!Targets.empty())
     {
         // std::cout<<"main get ---"<<Targets.size()<<"--- target!!!"<<std::endl;
@@ -192,8 +211,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     {
         // std::cout<<"no target!!!"<<std::endl;
     }
-    cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-
+ 
     // tracking
     // port & aim_point
     robot_msgs::robot_ctrl vision_send_data;
@@ -207,6 +225,12 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // is_need_reset = false;  // TODO:  for test
     // if(is_need_reset)
     //     Track.reset();
+
+    // for(int i=0; i<Targets.size(); ++i)
+    // {
+    //     std::cout<<Targets[i].id<<" * ";
+    // }
+    // std::cout<<std::endl;
 
     track_bool= Track.locateEnemy(src,Targets,now_time);
 
@@ -250,8 +274,27 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         cv::circle(src,cv::Point(640,20),20,cv::Scalar(0,0,255),-1);
     }
 
+    // vision_send_data.fire_command = 0x32;
+    // vision_send_data.target_lock = 0x32;
+
+//-------publish Points & coordinate ---------------------------------------------------------------------------------------------------------------
+
     // send port gimbal message 
     vision_pub_.publish(vision_send_data);  
+
+    // create tf TODO: global varie, father & child 
+    transformStamped.header.frame_id = "turtle1";
+    transformStamped.child_frame_id = "  ";
+    transformStamped.transform.translation.x = 0.0;
+    transformStamped.transform.translation.y = 2.0;
+    transformStamped.transform.translation.z = 0.0;
+    tf2::Quaternion q;
+            q.setRPY(0, 0, 0);
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+    
     // send aim point in camera
     aim_point.header.frame_id = "camera";
     aim_point.header.seq++;
@@ -259,8 +302,16 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     aim_point.point.x = Track.enemy_armor.camera_position[0];
     aim_point.point.y = Track.enemy_armor.camera_position[1];
     aim_point.point.z = Track.enemy_armor.camera_position[2];
-    aim_point_pub_.publish(aim_point);
+    // aim_point_pub_.publish(aim_point);
 
+
+
+
+//-------show main-result-image---------------------------------------------------------------------------------------------------------------
+    
+    cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"SPEED  : " + std::to_string(bullet_speed),cv::Point2f(0,512),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+   
     // show track state on img's ru
     switch (Track.tracker_state)
     {
@@ -279,16 +330,20 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     }
 
     // show receive data on img's ru
-    cv::putText(src,"p : "+std::to_string(pitch),cv::Point2f(1280 - 200,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"y : "+std::to_string(yaw),cv::Point2f(1280 - 200,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"r : "+std::to_string(roll),cv::Point2f(1280 - 200,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"p : "+std::to_string(pitch),cv::Point2f(1280 - 300,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"y : "+std::to_string(yaw),cv::Point2f(1280 - 300,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"r : "+std::to_string(roll),cv::Point2f(1280 - 300,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
     // show send data on img's lu
-    cv::putText(src,"PITCH    : "+std::to_string(vision_send_data.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"YAW      : "+std::to_string(vision_send_data.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"ROLL     : "+std::to_string(Track.AS.ab_roll),cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"PITCH    : "+std::to_string(Track.pitch),cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"YAW      : "+std::to_string(Track.yaw),cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"ROLL     : "+std::to_string(Track.roll),cv::Point2f(0,120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     cv::putText(src,"DISTANCE : "+std::to_string(Track.enemy_armor.camera_position.norm())+"m",cv::Point2f(0,150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
+    // show delta angle to rotate 
+    cv::putText(src,"delta_p : "+std::to_string(Track.pitch - Track.AS.ab_pitch),cv::Point2f(1280 - 300,512),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"delta_y : "+std::to_string(Track.yaw - Track.AS.ab_yaw),cv::Point2f(1280 - 300,512 + 30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    
     // 展示选择到的装甲板
     cv::Point2f vertice_enemy[4];
     Track.enemy_armor.points(vertice_enemy);
@@ -316,10 +371,23 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.camera_position[1]),cv::Point2f(0,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.camera_position[2]),cv::Point2f(0,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     
-    cv::putText(src,"world_position",cv::Point2f(1280 - 200,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.world_position[0]),cv::Point2f(1280 - 200,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.world_position[1]),cv::Point2f(1280 - 200,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.world_position[2]),cv::Point2f(1280 - 200,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::Point2f bullet = Track.AS.imu2pixel(Track.bullet_point);
+    cv::circle(src,bullet,3,cv::Scalar(150,100,255),-1);
+
+    cv::putText(src,"predict_position",cv::Point2f(1280 - 900,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"x  : "+std::to_string(Track.predicted_position[0]),cv::Point2f(1280 - 900,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"y  : "+std::to_string(Track.predicted_position[1]),cv::Point2f(1280 - 900,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"z  : "+std::to_string(Track.predicted_position[2]),cv::Point2f(1280 - 900,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+
+    cv::putText(src,"bullet_position",cv::Point2f(1280 - 600,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"x  : "+std::to_string(Track.bullet_point[0]),cv::Point2f(1280 - 600,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"y  : "+std::to_string(Track.bullet_point[1]),cv::Point2f(1280 - 600,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"z  : "+std::to_string(Track.bullet_point[2]),cv::Point2f(1280 - 600,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+
+    cv::putText(src,"world_position",cv::Point2f(1280 - 300,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.world_position[0]),cv::Point2f(1280 - 300,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.world_position[1]),cv::Point2f(1280 - 300,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.world_position[2]),cv::Point2f(1280 - 300,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     
 
     // 用预测位置为中心点，选择的装甲板画框
@@ -343,21 +411,24 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
-    cv::circle(src,cv::Point(640,512),5,cv::Scalar(150,100,255),-1);
+    cv::circle(src,cv::Point(640,512),5,cv::Scalar(255,200,100),-1);
 
     // show image
     cv::imshow("main-result-image", src);
     cv::waitKey(1);
+//-----------------------------------------------------------------------------------------------------------------------------------------------------   
 }
 
 int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
 
-    ros::init(argc,argv,"mv_camera_sub");
+    ros::init(argc,argv,"vision");
     ros::NodeHandle nh;
     vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
+
     aim_point_pub_ = nh.advertise<geometry_msgs::PointStamped>("aim_point", 1);
+
 
     image_transport::ImageTransport it(nh);
     // image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")

@@ -1,12 +1,13 @@
-#include "armor_prediction.h"
+#include "spin_prediction.h"
 
 namespace robot_detection {
-        
-    void KalmanFilter::initial_KF()
+
+    SpinEKF::SpinEKF()
     {
-        H << 1, 0, 0, 0, 0, 0,
-             0, 1, 0, 0, 0, 0,
-             0, 0, 1, 0, 0, 0;
+        H << 1, 0;
+
+        P <<1, 0,
+            0, 1;
 
         cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
         cv::Mat Q_, R_;
@@ -16,41 +17,15 @@ namespace robot_detection {
 
         cv::cv2eigen(R_,R);
         cv::cv2eigen(Q_,Q);
-
-        P <<1, 0, 0, 0, 0, 0,
-            0, 1, 0, 0, 0, 0,
-            0, 0, 1, 0, 0, 0,
-            0, 0, 0, 1, 0, 0,
-            0, 0, 0, 0, 1, 0,
-            0, 0, 0, 0, 0, 1;
     }
 
-    void KalmanFilter::setXPost(Eigen::Vector3d position)
+    void SpinEKF::setF(double t)
     {
-        x_post << position[0], position[1], position[2], 0, 0, 0;
+        F <<1, t,
+            0, 1;
     }
 
-    void KalmanFilter::setPosAndSpeed(Eigen::Vector3d position, Eigen::Vector3d speed)
-    {
-        x_post << position[0], position[1], position[2], speed[0], speed[1], speed[2];
-    }
-
-    void KalmanFilter::setF(double t)
-    {
-        F <<1, 0, 0, t, 0, 0,
-            0, 1, 0, 0, t, 0,
-            0, 0, 1, 0, 0, t,
-            0, 0, 0, 1, 0, 0,
-            0, 0, 0, 0, 1, 0,
-            0, 0, 0, 0, 0, 1;
-    }
-
-    void KalmanFilter::setP(Eigen::Matrix<double, 6, 6> P_last)
-    {
-        this->P = P_last;
-    }
-
-    Eigen::Matrix<double, 6, 1> KalmanFilter::predict()
+    Eigen::Matrix<double, 2, 1> SpinEKF::predict()
     {
         // 预测下一时刻的值
         x_pre = F * x_post;   //x的先验估计由上一个时间点的后验估计值和输入信息给出
@@ -63,7 +38,7 @@ namespace robot_detection {
         return x_pre;
     }
 
-    Eigen::Matrix<double, 6, 1> KalmanFilter::update(Eigen::Vector3d z_k) {
+    Eigen::Matrix<double, 2, 1> SpinEKF::update(Eigen::Vector3d z_k) {
         //计算kalman增益
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();  //Kg(k)= P(k|k-1) H’ / (H P(k|k-1) H’ + Q)
 
@@ -75,5 +50,7 @@ namespace robot_detection {
 
         return x_post;
     }
+
+
 
 }

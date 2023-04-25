@@ -1,22 +1,37 @@
 %YAML:1.0
 ---
-R: !!opencv-matrix
-  rows: 3
-  cols: 3
-  dt: d
-  data: [ 0.001, 0, 0,
-          0, 0.001, 0,
-          0, 0.0, 0.001 ]
-Q: !!opencv-matrix
-  rows: 6
-  cols: 6
-  dt: d
-  data: [ 1, 0, 0, 0, 0, 0,
-          0, 1, 0, 0, 0, 0,
-          0, 0, 1, 0, 0, 0,
-          0, 0, 0, 1, 0, 0,
-          0, 0, 0, 0, 1, 0,
-          0, 0, 0, 0, 0, 1 ]
 
-shoot_delay: 0.07
+KalmanFilter:
+  R: !!opencv-matrix
+    rows: 3
+    cols: 3
+    dt: d
+    data: [ 0.001, 0, 0,
+            0, 0.001, 0,
+            0, 0.0, 0.001 ]
+  Q: !!opencv-matrix
+    rows: 6
+    cols: 6
+    dt: d
+    data: [ 1, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0,
+            0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 1 ]
+
+SpinEKF:
+    R: !!opencv-matrix
+    rows: 1
+    cols: 1
+    dt: d
+    data: [ 1, ]
+  Q: !!opencv-matrix
+    rows: 2
+    cols: 2
+    dt: d
+    data: [ 1, 0, 
+            0, 1, ]
+
+shoot_delay: 0.1
 error_distance: 1
