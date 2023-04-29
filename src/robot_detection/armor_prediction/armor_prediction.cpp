@@ -2,7 +2,7 @@
 
 namespace robot_detection {
         
-    void KalmanFilter::initial_KF()
+void KalmanFilter::initial_KF()
     {
         H << 1, 0, 0, 0, 0, 0,
              0, 1, 0, 0, 0, 0,
@@ -10,8 +10,8 @@ namespace robot_detection {
 
         cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
         cv::Mat Q_, R_;
-        fs[self_type]["Q"] >> Q_;
-        fs[self_type]["R"] >> R_;
+        fs["Q"] >> Q_;
+        fs["R"] >> R_;
         fs.release();
 
         cv::cv2eigen(R_,R);

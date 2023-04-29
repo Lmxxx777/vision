@@ -7,18 +7,15 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CompressedImage.h>
-// tf2
-// #include <tf/transform_broadcaster.h>  // old tf , need to use tf2
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
+
+#include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PointStamped.h>
-// message_filters for time 
+
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
-// msg by diy
+// msg
 #include "robot_msgs/vision.h"
 #include "robot_msgs/robot_ctrl.h"
 #include "robot_msgs/EulerAngles.h"
@@ -52,9 +49,6 @@ double last_pitch, last_yaw;
 double delta_pitch, delta_yaw;
 double gimbal_pitch, gimbal_yaw, gimbal_roll;
 double offset_x, offset_y, offset_z;
-
-tf2_ros::TransformBroadcaster tfb;
-geometry_msgs::TransformStamped transformStamped;
 
 ros::Publisher vision_pub_;
 ros::Publisher aim_point_pub_;
@@ -158,6 +152,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     src = cv_bridge::toCvCopy(src_msg, "bgr8")->image;
     // ROS_INFO("show miage's width %d \n", src.cols);
 
+    cv::Mat _src = src.clone();
+
     // imu
     robot_msgs::vision vision_data;
     vision_data = *imu_msg;
@@ -169,7 +165,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     for(int i = 0; i<vision_data.quaternion.size(); ++i)
     {
         quaternion[i] = vision_data.quaternion[i];
-        quaternion[i] = round(quaternion[i] * 1000)/1000;   // TODO: jieduan shuju
+        // quaternion[i] = round(quaternion[i] * 1000)/1000;   // TODO: jieduan shuju
         // std::cout<<quaternion[i]<<" ";
     }
     // std::cout<<std::endl;
@@ -211,7 +207,14 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     {
         // std::cout<<"no target!!!"<<std::endl;
     }
- 
+    cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"SPEED  " + std::to_string(bullet_speed),cv::Point2f(0,512),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    
+    cv::putText(src,"0  " + std::to_string(quaternion[0]),cv::Point2f(0,512+30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"1  " + std::to_string(quaternion[1]),cv::Point2f(0,512+60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"2  " + std::to_string(quaternion[2]),cv::Point2f(0,512+90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(src,"3  " + std::to_string(quaternion[3]),cv::Point2f(0,512+120),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    
     // tracking
     // port & aim_point
     robot_msgs::robot_ctrl vision_send_data;
@@ -277,24 +280,8 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // vision_send_data.fire_command = 0x32;
     // vision_send_data.target_lock = 0x32;
 
-//-------publish Points & coordinate ---------------------------------------------------------------------------------------------------------------
-
     // send port gimbal message 
     vision_pub_.publish(vision_send_data);  
-
-    // create tf TODO: global varie, father & child 
-    transformStamped.header.frame_id = "turtle1";
-    transformStamped.child_frame_id = "  ";
-    transformStamped.transform.translation.x = 0.0;
-    transformStamped.transform.translation.y = 2.0;
-    transformStamped.transform.translation.z = 0.0;
-    tf2::Quaternion q;
-            q.setRPY(0, 0, 0);
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-    
     // send aim point in camera
     aim_point.header.frame_id = "camera";
     aim_point.header.seq++;
@@ -304,14 +291,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     aim_point.point.z = Track.enemy_armor.camera_position[2];
     // aim_point_pub_.publish(aim_point);
 
-
-
-
-//-------show main-result-image---------------------------------------------------------------------------------------------------------------
-    
-    cv::putText(src,std::to_string(Targets.size()) +" ARMOR",cv::Point2f(1280 - 200,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-    cv::putText(src,"SPEED  : " + std::to_string(bullet_speed),cv::Point2f(0,512),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-   
     // show track state on img's ru
     switch (Track.tracker_state)
     {
@@ -413,22 +392,27 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     cv::circle(src,cv::Point(640,512),5,cv::Scalar(255,200,100),-1);
 
+    // int c = cv::waitKey(10);
+    // std::string path0="/home/lmx2/data/buff0.jpg";
+    // std::string path="/home/lmx2/data/buff.jpg";
+    // if(c==113){
+    //     cv::imwrite(path0,_src);
+    //     cv::imwrite(path,src);
+    // }
+
     // show image
     cv::imshow("main-result-image", src);
     cv::waitKey(1);
-//-----------------------------------------------------------------------------------------------------------------------------------------------------   
 }
 
 int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
 
-    ros::init(argc,argv,"vision");
+    ros::init(argc,argv,"mv_camera_sub");
     ros::NodeHandle nh;
     vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
-
     aim_point_pub_ = nh.advertise<geometry_msgs::PointStamped>("aim_point", 1);
-
 
     image_transport::ImageTransport it(nh);
     // image_transport::Subscriber camera_src_sub = it.subscribe("image_raw",1,ImageCallback);  //,image_transport::TransportHints("compressed")

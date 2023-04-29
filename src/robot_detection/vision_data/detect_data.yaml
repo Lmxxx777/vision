@@ -3,7 +3,7 @@
 # enemy_color
 enemy_color: BLUE
 # binary_thresh
-binThresh: 80
+binThresh: 200
 
 redBinThresh: 50
 blueBinThresh: 150
@@ -34,5 +34,5 @@ id_grade_ratio: 0.6
 near_grade_ratio: 0.2
 height_grade_ratio: 0.2
 # thresh_confidence
-thresh_confidence: 0.9
-categories: 7
+thresh_confidence: 0.96
+categories: 8

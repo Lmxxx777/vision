@@ -3,7 +3,7 @@
 // #include <opencv2/core/eigen.hpp>
 
 #define ANTI_SPIN
-#define PRE
+// #define PRE
 
 namespace robot_detection {
 
@@ -213,7 +213,7 @@ namespace robot_detection {
                         // }
                         
                         
-                        if(i == 0 && AS.pixel2imu(temp[i]).norm() <= hero_distance && tracking_id != 1)
+                        if(i == 0 && AS.pixel2imu(temp[i]).norm() <= hero_distance)
                         {//英雄
                             switch_enemy_cnt[i] = 0;
                             enemy_armor = temp[i];
@@ -231,7 +231,7 @@ namespace robot_detection {
 
                 if(change)
                 {
-                    // std::cout<<"**********************************\n";
+                    // std::cout<<'**********************************\n';
                     reset();
                     tracking_id = enemy_armor.id;
                     return false;
@@ -637,7 +637,6 @@ namespace robot_detection {
                 }
             }
 
-
         }
         else
         {
@@ -730,7 +729,7 @@ namespace robot_detection {
         // if(is_aim_virtual_armor)
             KF.setXPost(enemy_armor.world_position);
             // KF.setPosAndSpeed(enemy_armor.world_position,predicted_enemy.tail(3));
-        // std::cout<<"predict speed:   "<<predicted_enemy.tail(3).transpose()<<std::endl;
+        std::cout<<"predict speed:   "<<predicted_enemy.tail(3).transpose()<<std::endl;
 
         KF.setF(dt
          + 1 
@@ -824,9 +823,9 @@ namespace robot_detection {
             if (tracker_state == TRACKING) { spin_detect(); }
 #endif
 
-            if(!switchEnemy(armors)) { return false; }
+            // if(!switchEnemy(armors)) { return false; }
 
-            if(!estimateEnemy(dt)) { return false;}
+            // if(!estimateEnemy(dt)) { return false;}
 
             //
             // Eigen::Vector3d gy;
@@ -871,6 +870,10 @@ namespace robot_detection {
 
             // pitch = 0;
 
+if (pitch > 15)
+{reset();
+return false;
+}
 
             return true;
         }
@@ -1140,12 +1143,6 @@ namespace robot_detection {
            std::cout << it.first << " -> " << it.second << "\n";
        }
         updateSpinScore();
-
-    }
-
-    void ArmorTracker::show()
-    {
-
 
     }
 

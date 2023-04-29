@@ -94,7 +94,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("enemy_color  is  %d  \n", enemy_color);
     // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
     // ROS_INFO("mode         is  %x  \n", mode);
-    buff_detection.AS.quaternionToRotationMatrix(quaternion);
+    buff_detection.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
 
     // buff-detecting
     buff_detection.detectResult(src, now_time);
@@ -116,7 +116,7 @@ int main(int argc, char  *argv[])
 {
     setlocale(LC_ALL,"");
 
-    ros::init(argc,argv,"vision");
+    ros::init(argc,argv,"mv_camera_sub");
     ros::NodeHandle nh;
     vision_pub_ = nh.advertise<robot_msgs::robot_ctrl>("robot_ctrl", 1);
 

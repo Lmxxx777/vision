@@ -11,11 +11,20 @@ namespace robot_detection{
     AngleSolve::AngleSolve()
     {
         cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
+        
+        big_w = (float)fs["big_w"];
+        big_h = (float)fs["big_h"];
+        small_w = (float)fs["small_w"];
+        small_h = (float)fs["small_h"];
+        buff_r_w = (float)fs["buff_r_w"];
+        buff_r_h = (float)fs["buff_r_h"];
+        buff_in_w = (float)fs["buff_in_w"];
+        buff_in_h = (float)fs["buff_in_h"];
+        buff_out_w = (float)fs["buff_out_w"];
+        buff_out_h = (float)fs["buff_out_h"];
+        buff_radius = (float)fs["buff_radius"];
+        buff_convex = (float)fs["buff_convex"];
 
-        fs["big_w"] >> big_w;
-        fs["big_h"] >> big_h;
-        fs["small_w"] >> small_w;
-        fs["small_h"] >> small_h;
         fs["self_type"] >> self_type;
 
         fs[self_type]["F_MAT"] >> F_MAT;
@@ -33,7 +42,7 @@ namespace robot_detection{
         fs.release();
     }
 
-    // zyx
+    // zyx  将角度乘以π/180.0，将角度制的角度转换成弧度制的角度，然后再调用cos&sin函数
     Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix(Eigen::Vector3d &theta)
     {
         Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
@@ -57,7 +66,7 @@ namespace robot_detection{
         return R;
     }
 
-    // xyz,固定相机和IMU两个坐标系的转换
+    // xyz,固定相机和IMU两个坐标系的转换 将角度乘以π/180.0，将角度制的角度转换成弧度制的角度，然后再调用cos&sin函数
     Eigen::Matrix3d AngleSolve::eulerAnglesToRotationMatrix2(Eigen::Vector3d &theta)
     {
         Eigen::Matrix3d R_x;    // 计算旋转矩阵的X分量
@@ -187,6 +196,46 @@ namespace robot_detection{
         return armor.camera_position;
     }
 
+        Eigen::Vector3d AngleSolve::pnp2imu(Eigen::Vector3d pos)
+    {
+        Eigen::Vector3d camera_position = pnp2cam(pos);
+        Eigen::Vector3d imu_pos = cam2imu(camera_position);
+        return imu_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pnp2cam(Eigen::Vector3d pos)
+    {
+        Eigen::Vector3d camera_position = rv*pos + tv;
+        return camera_position;
+    }
+
+    // for buff
+    Eigen::Vector3d AngleSolve::pixel2cam(cv::Point2f *p, int type)
+    {
+        Eigen::Vector3d cam_pos = pnpSolve(p,type);
+        return cam_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pixel2imu(cv::Point2f *p, int type)
+    {
+        Eigen::Vector3d cam_pos = pixel2cam(p,type);
+        Eigen::Vector3d imu_pos = cam2imu(cam_pos);
+        return imu_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::imu2buff(Eigen::Vector3d imu_pos)
+    {
+        Eigen::Vector3d buff_pos = RotationMatrix_imu2buff.inverse() * imu_pos;
+        // Eigen::Vector3d buff_pos = RotationMatrix_imu2buff.inverse() * imu_pos;
+        return buff_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::buff2imu(Eigen::Vector3d buff_pos)
+    {
+        Eigen::Vector3d imu_pos = RotationMatrix_imu2buff * buff_pos;
+        return imu_pos;
+    }
+
     float AngleSolve::BulletModel(float x, float v, float angle) { //x:m,v:m/s,angle:rad
         float t,y;
         t = (float)((exp(SMALL_AIR_K * x) - 1) / (SMALL_AIR_K * v * cos(angle)));
@@ -225,44 +274,101 @@ namespace robot_detection{
        return Vector3d(Pos[0],Pos[1],y_temp);  // imu
     }
 
+    // 左上角顺时针
     Eigen::Vector3d AngleSolve::pnpSolve(Point2f *p, int type)
     {
-        double w = type == SMALL ? small_w : big_w;
-        double h = type == SMALL ? small_h : big_h;
-        cv::Point2f lu, ld, ru, rd;
-        std::vector<cv::Point3d> ps = {
-                {-w / 2 , -h / 2, 0.},
-                { w / 2 , -h / 2, 0.},
-                { w / 2 ,  h / 2, 0.},
-                {-w / 2 ,  h / 2, 0.}
-        };
-
+        // TODO:  float only
+        std::vector<cv::Point3f> ps;
         std::vector<cv::Point2f> pu;
-        pu.clear();
-        pu.push_back(p[3]);
-        pu.push_back(p[2]);
-        pu.push_back(p[1]);
-        pu.push_back(p[0]);
+
+        if(type == SMALL)
+        {
+            float w = small_w;
+            float h = small_h;
+            ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+            pu.push_back(p[3]);
+            pu.push_back(p[2]);
+            pu.push_back(p[1]);
+            pu.push_back(p[0]);
+        }
+        else if(type == BIG)
+        {
+            float w = big_w;
+            float h = big_h;
+            ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+            pu.push_back(p[3]);
+            pu.push_back(p[2]);
+            pu.push_back(p[1]);
+            pu.push_back(p[0]); 
+        }
+        else if(type == BUFF_R)
+        {
+            float w = buff_r_w;
+            float h = buff_r_h;
+            ps = {
+                    {-w / 2 , -h / 2, 0.},
+                    { w / 2 , -h / 2, 0.},
+                    { w / 2 ,  h / 2, 0.},
+                    {-w / 2 ,  h / 2, 0.}
+            };
+            pu.push_back(p[0]);
+            pu.push_back(p[1]);
+            pu.push_back(p[2]);
+            pu.push_back(p[3]);
+        }
+        else if(type == BUFF_NO)
+        {
+            ps = {
+                    {-buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_in_w / 2 ,  buff_in_h , 0.},
+                    {-buff_in_w / 2 ,  buff_in_h , 0.},
+                    {0 , buff_radius, -buff_convex},
+            };
+            pu.push_back(p[0]);
+            pu.push_back(p[1]);
+            pu.push_back(p[2]);
+            pu.push_back(p[3]);
+            pu.push_back(p[4]);
+        }
+        else if(type == BUFF_YES)
+        {
+            ps = {
+                    {-buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_out_w / 2 , -buff_out_h , 0.},
+                    { buff_in_w / 2 ,  buff_in_h , 0.},
+                    {-buff_in_w / 2 ,  buff_in_h , 0.},
+                    {0 , buff_radius, -buff_convex},
+            };
+            pu.push_back(p[0]);
+            pu.push_back(p[1]);
+            pu.push_back(p[2]);
+            pu.push_back(p[3]);
+            pu.push_back(p[4]);
+        }
 
         cv::Mat rvec;
         cv::Mat tvec;
-        Eigen::Vector3d tv;
 
         cv::solvePnP(ps, pu, F_MAT, C_MAT, rvec, tvec/*, SOLVEPNP_IPPE*/);
+        
+        Mat rv_mat;
+        cv::Rodrigues(rvec,rv_mat);
+        cv::cv2eigen(rv_mat,rv);
         cv::cv2eigen(tvec, tv);
-
-//    Mat R;
-//    Rodrigues(rvec,R);        std::cout<<"[Pos1:]  |"<<Pos[2]<<std::endl;
-//
-//    // offset++
-        // std::cout<<"distance:   "<<tv.norm()<<std::endl;
 
 #ifdef SHOW_MEASURE_RRECT
         Mat pnp_check = _src.clone();
-        Mat rv_mat;
-        Eigen::Matrix<double,3,3> rv;
-        cv::Rodrigues(rvec,rv_mat);
-        cv::cv2eigen(rv_mat,rv);
         std::cout<<"rv"<<rv<<std::endl;
 
         Eigen::Vector3d imuPoint = {-w / 2 , -h / 2, 0.};
@@ -320,7 +426,10 @@ namespace robot_detection{
 
     double AngleSolve::getFlyTime(Eigen::Vector3d &pos)
     {
-        return pos.norm() / bullet_speed;
+        double pitch;
+        Eigen::Vector3d world_dropPosition = airResistanceSolve(pos,pitch);
+        double t = (double)((exp(SMALL_AIR_K * (double)sqrt(pos[0]*pos[0]+ pos[1]*pos[1])) - 1) / (SMALL_AIR_K * bullet_speed * cos(pitch)));
+        return t;
     }
 
     Eigen::Vector3d AngleSolve::getAngle(Eigen::Vector3d predicted_position, Eigen::Vector3d &world_dropPosition)

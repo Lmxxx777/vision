@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   camera_info_manager
   geometry_msgs
-  tf2_ros
+  tf
 
   robot_msgs
 )
@@ -33,7 +33,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES armor_detection
- CATKIN_DEPENDS roscpp rospy std_msgs rosconsole sensor_msgs cv_bridge image_geometry image_proc image_transport message_filters camera_info_manager geometry_msgs tf2_ros robot_msgs
+ CATKIN_DEPENDS roscpp rospy std_msgs rosconsole sensor_msgs cv_bridge image_geometry image_proc image_transport message_filters camera_info_manager geometry_msgs tf robot_msgs
 #  DEPENDS system_lib
 )
 
@@ -69,20 +69,20 @@ add_library(robot_detection_lib
             ${PROJECT_SOURCE_DIR}/gimbal_control/gimbal_control.h
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.cpp
             ${PROJECT_SOURCE_DIR}/robot_status/robot_status.h
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.cpp
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.h
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.cpp
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.h
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.cpp
-            # ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.h
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.cpp
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_detection.h
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.cpp
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_track.h
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.cpp
+            ${PROJECT_SOURCE_DIR}/buff_solution/buff_prediction.h
 )
 
 # for auto aim
-add_executable(robot_detection robot_detection.cpp)
+# add_executable(robot_detection robot_detection.cpp)
 # for buff aim
 # add_executable(robot_detection buff_solution.cpp)
 # for debug buff
-# add_executable(robot_detection buff_debug.cpp)
+add_executable(robot_detection buff_debug.cpp)
 
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(robot_detection

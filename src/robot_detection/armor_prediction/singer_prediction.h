@@ -12,14 +12,12 @@ namespace robot_detection {
     // #define TANH_HALF(x) (exp(1.1*x)-exp(-1.1*x))/(exp(1.1*x)+exp(-1.1*x))
 
 #define TANH1(x) (exp(5.*x)-exp(-5.*x))/(exp(5.*x)+exp(-5.*x))
-#define TANH2(x) (exp(15.*x)-exp(-15.*x))/(exp(15.*x)+exp(-15.*x))
+#define TANH2(x) (exp(20.*x)-exp(-20.*x))/(exp(20.*x)+exp(-20.*x))
 
 
     //二维Singer模型
     class Skalman
     {
-        double x1;
-        double x2;
         double shoot_delay=0.01;
         double alefa = 1.0/30.0;//目标机动频率
         double Sigmaq = 0.01;//目标加速度标准差，Singer模型假设目标加速度符合均值为零的高斯分布

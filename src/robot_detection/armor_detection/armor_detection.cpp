@@ -68,9 +68,9 @@ namespace robot_detection {
         src.copyTo(_src);
 
         //二值化
-        // Mat gray;
-        cvtColor(_src,_gray,COLOR_BGR2GRAY);
-        threshold(_gray,_binary,binThresh,255,THRESH_BINARY);
+        Mat gray;
+        cvtColor(_src,gray,COLOR_BGR2GRAY);
+        threshold(gray,_binary,binThresh,255,THRESH_BINARY);
 #ifdef BINARY_SHOW
         imshow("_binary",_binary);
 #endif //BINARY_SHOW
@@ -181,7 +181,7 @@ namespace robot_detection {
                     // cout << "color: red-" << sum_r[0] << " | blue-" << sum_b[0] << " | green-" << sum_g[0] << endl;
 
                     light.lightColor = sum[2] > sum[0] ? RED : BLUE;
-                    // TODO: 分辨红蓝还有紫色，实测得出，紫色和蓝色区别较小，选择通过装甲板大小和数字类别排除己方无敌基地
+                    // TODO: 分辨红蓝还有紫色
                     // if(sum_r[0]>sum_b[0])
                     // {
                     //     light.lightColor = RED;
@@ -501,6 +501,8 @@ namespace robot_detection {
         }
 
         // std::cout<<"binThreshold: "<<binThresh<<std::endl;
+        
+        binThresh = 150;
 
         //do autoaim task
         setImage(src);
@@ -508,18 +510,23 @@ namespace robot_detection {
         matchLights();
         chooseTarget();
 
-        // 遍历vector并删除不符合要求的元素  for sentry and infantry
+        // int size = finalArmors.size();
+        // for(int i=0; i<size; ++i)
+        // {
+        //     if(finalArmors[i].id != 1 || finalArmors[i].id != 3 ||finalArmors[i].id != 4 || finalArmors[i].id != 6)
+        //     {
+
+        //     }
+        // }
+
+        // 遍历vector并删除不符合要求的元素
         auto it = finalArmors.begin();
         while (it != finalArmors.end()) 
         {
-            if ((*it).id == 8 && (*it).type == BIG) // 前哨站小装甲板
+            if ((*it).id <= 1 && (*it).id > 6) 
             {
                 it = finalArmors.erase(it);
             } 
-            else if (((*it).id == 1 || (*it).id == 7) && (*it).type == SMALL)  // 基地和1号大装甲板
-            {
-                it = finalArmors.erase(it);
-            }
             else 
             {
                 ++it;
@@ -616,7 +623,7 @@ namespace robot_detection {
                 cv::Point(0, top_light_y),
         };
         const Mat& rotation_matrix = cv::getPerspectiveTransform(armor.armor_pt4, target_vertices);
-        cv::warpPerspective(_gray, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
+        cv::warpPerspective(_src, numDst, rotation_matrix, cv::Size(warp_width, warp_height));
 
         // Get ROI
         // std::cout<<numDst.size()<<std::endl;

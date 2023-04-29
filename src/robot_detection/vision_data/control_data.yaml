@@ -5,7 +5,7 @@ big_h: 0.057
 small_w: 0.135
 small_h: 0.057
 buff_r_w: 0.0730
-buff_r_h: 0.0725
+buff_r_h: 0.0730
 buff_in_w: 0.36426
 buff_in_h: 0.043
 buff_out_w: 0.337836
@@ -113,4 +113,5 @@ sentry:
     dt: d
     # data: [ 0 , -1.3 , 1.1 ]    # small
     # data: [ 0 , -1.25 , 1.1 ]    # big
-    data: [ 0 , 0.5 , 0.1 ]    
+    # data: [ 0 , -0.8 , -3.0 ] 
+    data: [ 0 , 0, 0]   

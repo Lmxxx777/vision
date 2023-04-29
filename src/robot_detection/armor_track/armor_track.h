@@ -65,8 +65,6 @@ namespace robot_detection {
         bool updateSpinScore();
         void spin_detect();
 
-        void show();  
-
         double last_r;
         Eigen::Vector3d last_position;
         bool is_target_move = false;

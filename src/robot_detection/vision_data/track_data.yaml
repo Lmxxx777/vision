@@ -6,7 +6,7 @@ new_old_threshold: 0.15
 switch_armor_threshold: 5
 
 switch_time_threshold: 10
-switch_enemy_threshold: 50
+switch_enemy_threshold: 300
 max_effective_distance: 7.5
 
 

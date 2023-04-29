@@ -65,8 +65,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     ros::Time begin = ros::Time::now();
 
     // begin for predict
-    double now_time = (double)cv::getTickCount();
-    // robot_detection::chrono_time t;
+    robot_detection::chrono_time now_time = std::chrono::high_resolution_clock::now();
 
     // camera
     src = cv_bridge::toCvCopy(src_msg, "bgr8")->image;
@@ -85,7 +84,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         vision_data.quaternion[2],
         vision_data.quaternion[3],
     };
-    float bullet_speed = vision_data.shoot;
+    float bullet_speed = vision_data.shoot_spd;
     int mode = vision_data.shoot_sta;
 
     bullet_speed = 28;
@@ -96,10 +95,10 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("enemy_color  is  %d  \n", enemy_color);
     // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
     // ROS_INFO("mode         is  %x  \n", mode);
-    buff_detection.AS.quaternionToRotationMatrix(quaternion);
+    buff_detection.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
 
     // buff-detecting
-    buff_detection.detectRsult(src);
+    buff_detection.detectResult(src,now_time);
 
 
     // Time
@@ -165,31 +164,74 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
 int main()
 {
-    // 打开文件
-	VideoCapture capture;
-	capture.open("/home/lmx2/rune_test.mp4");
-	if (!capture.isOpened()) {
-		printf("could not read this video file...\n");
-		return -1;
-	}
-	Size S = Size((int)capture.get(CAP_PROP_FRAME_WIDTH),
-		(int)capture.get(CAP_PROP_FRAME_HEIGHT));
-	int fps = capture.get(CAP_PROP_FPS);
-	printf("current fps : %d \n", fps);
-	VideoWriter writer("/home/lmx2/rune_test_2.mp4", CAP_OPENCV_MJPEG, fps, S, true);
+    // // 打开文件
+	// VideoCapture capture;
+	// capture.open("/home/lmx2/rune_test.mp4");
+	// if (!capture.isOpened()) {
+	// 	printf("could not read this video file...\n");
+	// 	return -1;
+	// }
+	// Size S = Size((int)capture.get(CAP_PROP_FRAME_WIDTH),
+	// 	(int)capture.get(CAP_PROP_FRAME_HEIGHT));
+	// int fps = capture.get(CAP_PROP_FPS);
+	// printf("current fps : %d \n", fps);
+	// VideoWriter writer("/home/lmx2/rune_test_2.mp4", CAP_OPENCV_MJPEG, fps, S, true);
 
-	Mat frame;
-	namedWindow("camera-demo", WINDOW_AUTOSIZE);
-	while (capture.read(frame)) {
-		imshow("camera-demo", frame);
-		writer.write(frame);
-		char c = waitKey(50);
-		if (c == 27) {
-			break;
-		}
-	}
-	capture.release();
-	writer.release();
-	waitKey(0);
+	// Mat frame;
+	// namedWindow("camera-demo", WINDOW_AUTOSIZE);
+	// while (capture.read(frame)) {
+	// 	imshow("camera-demo", frame);
+	// 	writer.write(frame);
+	// 	char c = waitKey(50);
+	// 	if (c == 27) {
+	// 		break;
+	// 	}
+	// }
+	// capture.release();
+	// writer.release();
+
+    cv::Mat buff = cv::imread("/home/lmx2/data/buff0.jpg");
+    // cv::Mat buff = cv::imread("/home/lmx2/data/buff_r.jpg");
+    // // save R r0i
+    // cv::Rect rt = cv::Rect(cv::Point(560,500),cv::Point(600,540));
+    // cv::Mat r_roi = buff(rt);
+    // cv::imwrite("/home/lmx2/data/buff_r.jpg",r_roi);
+
+
+    float quaternion[4] = {
+        0.915764,
+        0.049038,
+        0.021370,
+        0.398140,
+    };
+    buff_detection.AS.init(0, 0, 0, quaternion, 28);
+    // buff-detecting
+    robot_detection::chrono_time now_time = std::chrono::high_resolution_clock::now();
+
+    buff_detection.isInitYaw = true;
+    buff_detection.detectResult(buff,now_time);
+
+    // cv::Mat channels[3];
+    // cv::split(buff, channels); // 分离多通道图像的通道
+    // cv::imshow("b",channels[0]);
+    // cv::imshow("g",channels[1]);
+    // threshold(channels[1], channels[1], 0, 255, THRESH_OTSU );
+    // cv::imshow("r",channels[1]);
+
+    // 测试：识别R的距离
+    // cv::Point2f points_4[4];
+    // points_4[0] = cv::Point2f(572, 514);
+    // points_4[1] = cv::Point2f(592, 514);
+    // points_4[2] = cv::Point2f(592, 534);
+    // points_4[3] = cv::Point2f(572, 534);
+    // points_4[0] = cv::Point2f(582 - buff_detection.r_width_pixel/2, 524 - buff_detection.r_height_pixel/2);
+    // points_4[1] = cv::Point2f(582 + buff_detection.r_width_pixel/2, 524 - buff_detection.r_height_pixel/2);
+    // points_4[2] = cv::Point2f(582 + buff_detection.r_width_pixel/2, 524 + buff_detection.r_height_pixel/2);
+    // points_4[3] = cv::Point2f(582 - buff_detection.r_width_pixel/2, 524 + buff_detection.r_height_pixel/2);
+    // Eigen::Vector3d pos = buff_detection.AS.pixel2imu(points_4, robot_detection::BUFF_R); 
+    // std::cout<<"distance: "<<pos.norm()<<std::endl;
+
+    cv::imshow("result",buff);
+	cv::waitKey(0);
 	return 0;
 }

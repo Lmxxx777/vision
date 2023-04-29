@@ -67,12 +67,15 @@ namespace robot_detection
         double radius_scale_ratio;      // 未击打符叶靶心和R中心的实际距离比测距距离
 
         bool isSmallBuff;       // 默认为小符，小符为true，大符为false
-        int buff_type;          // 默认为小符，小符为，大符为false
+        int buff_type;          // 默认为小符，小符为1，大符为0
 
         bool isClockwise;       // true表示顺时针，false表示逆时针
-        int rotate_direction;   // 1表示顺时针，-1表示逆时针
+        int rotate_direction;   // -1表示顺时针，1表示逆时针     ------------!!!!!!---attention---!!!!!!------------
+        double current_angle;
         double rotate_speed;
         double const_rotate_speed;  // 60°/s
+
+        Eigen::Vector3d bullet_position;
 
         AngleSolve AS;
         bool isInitYaw;
@@ -83,15 +86,15 @@ namespace robot_detection
         cv::Mat _binary;
         int binary_threshold;
         int buff_color;
-        std::vector<std::vector<cv::Point2f>> all_contours;
+        std::vector<std::vector<cv::Point>> all_contours;
 	    std::vector<cv::Vec4i> all_hierarchy;
-        std::vector<std::vector<cv::Point2f>> r_contours;
+        std::vector<std::vector<cv::Point>> r_contours;
         std::vector<cv::Vec4i> r_hierarchy;
-        std::vector<std::vector<cv::Point2f>> buff_contours;
+        std::vector<std::vector<cv::Point>> buff_contours;
         std::vector<cv::Vec4i> buff_hierarchy;
-        void setImage(const cv::Mat src);
+        void setImage();
         void extractContours();
-        bool matchColor(std::vector<cv::Point2f> contour);
+        bool matchColor(std::vector<cv::Point> contour);
 
         // R
         bool isFindR;
@@ -103,6 +106,9 @@ namespace robot_detection
         double r_min_area;
         double r_full_ratio_min;
         double r_full_ratio_max;
+        int r_width_pixel;
+        int r_height_pixel; 
+        // double r_
         bool findRcenter();
         bool fitCircle();
 
@@ -113,6 +119,7 @@ namespace robot_detection
         bool matchComponents();
 
         //Buff calculation
+        double maintainAngleLegal(double angle);
         bool calculateBuffPosition();
         bool calculateScaleRatio();
         bool isSwitchBuff();
@@ -129,8 +136,8 @@ namespace robot_detection
         double a;
         double w;
         double b;
-        int fit_sinusoid_counts;
-        double fit_sinusoid_time;  // CV_PI/2(1.57079632675) ~ 1.667s
+        int fit_sinusoid_counts;    // 314 ~ 335 (>400)
+        double fit_sinusoid_time;   // PI/2 ~ 1.667s   (whole T: PI ~ 3.335)
         bool fitSinusoid();
         chrono_time begin_time;
         bool isSwitch;

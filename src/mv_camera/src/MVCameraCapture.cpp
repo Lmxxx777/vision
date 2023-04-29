@@ -64,13 +64,13 @@ void MVCameraCapture::open(int32_t device_id)
 //   CameraGetImageResolution(hCamera_, &psCurVideoSize);
 //   psCurVideoSize.iWidthZoomHd = 1024;
 //   psCurVideoSize.iHeightZoomHd = 1024;
-//   CameraSetImageResolution(hCamera_, &psCurVideoSize);
+//  CameraSetImageResolution(hCamera_, &psCurVideoSize);
 
-//   CameraSetTriggerMode(hCamera_,2); // 自己加的程序，硬件触发才会有图片
+  //CameraSetTriggerMode(hCamera_,2); // 自己加的程序，硬件触发才会有图片
 
 // 手动曝光，曝光时间 2ms
     CameraSetAeState(hCamera_, FALSE);
-    CameraSetExposureTime(hCamera_, 2000);  //TODO: 注意修改曝光时间
+    CameraSetExposureTime(hCamera_, 1500);
     // CameraSetWbMode(hCamera_,true);
 
 
@@ -133,9 +133,6 @@ bool MVCameraCapture::capture()
   //  // cv::imwrite(cam0_path + image_name, cv_img);    //保存图片
                   
 //--------------------------自己加的程序-保存图像到路径 ----------------------------------//    
-
-    
-    
     
     // std::cout << bridge_.image.rows << std::endl;
     // cv::resize(bridge_.image, bridge_.image, cv::Size(640, 480));

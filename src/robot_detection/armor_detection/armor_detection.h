@@ -108,7 +108,6 @@ namespace robot_detection {
         double thresh_confidence;
 
         cv::Mat _src;  // 裁剪src后的ROI
-        cv::Mat _gray;
         cv::Mat _binary;
 
         Armor lastArmor;
