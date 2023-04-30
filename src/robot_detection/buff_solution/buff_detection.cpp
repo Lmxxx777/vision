@@ -1,6 +1,6 @@
 #include "buff_detection.h"
 
-#define BINARY_SHOW
+// #define BINARY_SHOW
 // #define DRAW_BUFF_CONTOURS
 
 namespace robot_detection
@@ -112,8 +112,8 @@ namespace robot_detection
         {
             if(!findRcenter())
                 return false;
-            // if(!fitCircle())
-            //     return false;
+            if(!fitCircle())
+                return false;
         }
         // else
         // {
@@ -123,9 +123,7 @@ namespace robot_detection
         //     }
         //     calculateBuffPosition();
         //     calculateScaleRatio();
-        //     calculateRotateDirectionAndSpeed(now_time);
-
-            
+        //     calculateRotateDirectionAndSpeed(now_time); 
         // }
 
         return true;
@@ -150,7 +148,7 @@ namespace robot_detection
         // std::cout << "Rotation matrix:" << std::endl;
         // std::cout << R << std::endl;
 
-        AS.ab_yaw = (49.2) * CV_PI / 180.0;
+        AS.ab_yaw = 49.2 * CV_PI / 180.0;
         Eigen::Vector3d yaw = {0, 0, AS.ab_yaw};
         // // Eigen::Vector3d yaw = {0, AS.ab_yaw, 0};
         // // Eigen::Vector3d yaw = {AS.ab_yaw, 0, 0};
@@ -274,10 +272,10 @@ namespace robot_detection
         {
             double r_area = cv::contourArea(all_contours[i]);
 
-            //RT
+            // RT
             cv::Rect r_rt = cv::boundingRect(all_contours[i]);
             double full_ratio = r_area / (r_rt.height * r_rt.width);
-            double square_ratio = r_rt.height / r_rt.width;
+            double square_ratio = (double)r_rt.height / (double)r_rt.width;  // 不做数据类型转换看不到小数
             // RRT ------ 暂时弃用------选择RT方案，如需变回，取消注释即可
             // cv::RotatedRect r_rrt = cv::minAreaRect(all_contours[i]);
             // double full_ratio = r_area / (r_rrt.size.height * r_rrt.size.width);
@@ -297,11 +295,7 @@ namespace robot_detection
             // }
 
             if(area_ok && contour_ok && full_ratio_ok && is_like_square && is_r_ok)
-            {
-                // std::cout<<"is like"<<std::endl;
-                // cv::rectangle()
-                cv::drawContours(findR,all_contours,i,cv::Scalar(0,255,0),1,cv::LINE_8);
-                
+            {                
                 bool is_color_ok = matchColor(all_contours[i]);
                 if(is_color_ok)
                 {
@@ -323,37 +317,38 @@ namespace robot_detection
                     float radius;
                     cv::minEnclosingCircle(all_contours[i], center, radius);
                     cv::circle(findR,center,radius,cv::Scalar(0,255,0),1,8);
-                    cv::rectangle(findR,r_rt,cv::Scalar(0,255,0),1,8);
-                    std::cout<<center<<"    "<<radius<<std::endl;
+                    // std::cout<<"center point"<<center<<"   radius"<<radius<<std::endl;
                     r_center.points_4[0] = cv::Point2f(r_center.rect.x - r_width_pixel/2, r_center.rect.y - r_height_pixel/2);
                     r_center.points_4[1] = cv::Point2f(r_center.rect.x + r_width_pixel/2, r_center.rect.y - r_height_pixel/2);
                     r_center.points_4[2] = cv::Point2f(r_center.rect.x + r_width_pixel/2, r_center.rect.y + r_height_pixel/2);
                     r_center.points_4[3] = cv::Point2f(r_center.rect.x - r_width_pixel/2, r_center.rect.y + r_height_pixel/2);
                     
                     r_center.imu_position = AS.pixel2imu(r_center.points_4, BUFF_R);
-                    std::cout<<"r_center.imu_position  distance:  "<<r_center.imu_position.norm()<<std::endl;
+                    std::cout<<"r_center.distance      :  "<<r_center.imu_position.norm()<<std::endl;
                     r_center.buff_position = AS.imu2buff(r_center.imu_position); 
-                    
                     
                     std::cout<<"r_center.imu_position  :  "<<r_center.imu_position.transpose()<<std::endl;
                     std::cout<<"r_center.buff_position :  "<<r_center.buff_position.transpose()<<std::endl;
-                    // // 剔除不良数值，即与实际距离的值偏差大的
-                    // double dis = r_center.buff_position.norm();
-                    // if(dis < r_actual_distance + error_range && dis > r_actual_distance - error_range)
-                    // {
-                    //     r_center.points_3d.emplace_back(r_center.buff_position);
-                    //     r_center.points_2d.emplace_back(cv::Point2f(r_center.buff_position[0],r_center.buff_position[2]));
-                    //     // RT
-                    //     r_center.pixel_position = cv::Point2f(r_center.rect.x + r_center.rect.width/2, r_center.rect.y + r_center.rect.height/2);
-                    //     // RRT
-                    //     // r_center.pixel_position = r_rrt.center;
-                    //     return true;
-                    // }
+
+
+                    // 剔除不良数值，即与实际距离的值偏差大的
+                    double dis = r_center.buff_position.norm();
+                    if(dis < r_actual_distance + error_range && dis > r_actual_distance - error_range)
+                    {
+                        r_center.points_3d.emplace_back(r_center.buff_position);
+                        r_center.points_2d.emplace_back(cv::Point2f(r_center.buff_position[0],r_center.buff_position[2]));
+                        // RT
+                        r_center.pixel_position = center;
+                        // RRT
+                        // r_center.pixel_position = r_rrt.center;
+
+                        imshow("findRcenter",findR);
+                        return true;
+                    }
                 }
             }
         }
-
-        imshow("findRcenter",findR);
+        std::cout<<"------ The target is lost in the process of fitting the circle !!!"<<std::endl;
         return false;
     }
 
@@ -361,6 +356,9 @@ namespace robot_detection
     {
         if(r_center.points_3d.size() <= fit_circle_counts)
         {
+            
+            std::cout<<"r_center.points_3d.size() :  "<<r_center.points_3d.size()<<std::endl;
+            std::cout<<"r_center.points_2d.size() :  "<<r_center.points_2d.size()<<std::endl;
             return false;
         }
         else
@@ -376,6 +374,9 @@ namespace robot_detection
             // fit in 2d
             AS.circleLeastFit(r_center.points_2d,r_center.buff_position[0],r_center.buff_position[2],r_center.radius);
 
+            std::cout<<"The center of the BUFF has now been fitted !!!"<<std::endl; 
+            std::cout<<"BUFF R POSITION : "<<r_center.buff_position.transpose()<<std::endl;
+            std::cout<<"BUFF R RADIUS   : "<<r_center.radius<<std::endl;
             isFindR = true;
             return true;
         }

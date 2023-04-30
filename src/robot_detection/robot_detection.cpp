@@ -392,13 +392,13 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     cv::circle(src,cv::Point(640,512),5,cv::Scalar(255,200,100),-1);
 
-    // int c = cv::waitKey(10);
-    // std::string path0="/home/lmx2/data/buff0.jpg";
-    // std::string path="/home/lmx2/data/buff.jpg";
-    // if(c==113){
-    //     cv::imwrite(path0,_src);
-    //     cv::imwrite(path,src);
-    // }
+    int c = cv::waitKey(10);
+    std::string path0 = "/home/lmx2/data/buff0.jpg";
+    std::string path  = "/home/lmx2/data/buff.jpg";
+    if(c==113){
+        cv::imwrite(path0,_src);
+        cv::imwrite(path,src);
+    }
 
     // show image
     cv::imshow("main-result-image", src);
