@@ -116,9 +116,13 @@ namespace robot_detection
         if(!isFindR)
         {
             if(!findRcenter())
+            {
                 return false;
+            }
             if(!fitCircle()) 
+            {
                 return false;
+            }
         }
         else
         {
@@ -127,9 +131,15 @@ namespace robot_detection
 
             if(findComponents())
             {
+                buff_no.in_rrt = cv::RotatedRect();
+                buff_no.out_rrt = cv::RotatedRect();
                 matchComponents();
             }
-            // calculateBuffPosition();
+            else
+            {
+                return false;
+            }
+            calculateBuffPosition();
         //     calculateScaleRatio();
         //     calculateRotateDirectionAndSpeed(now_time); 
         }
@@ -244,28 +254,100 @@ namespace robot_detection
     // 工具函数：重新定义旋转矩形的点，左上角顺时针
     void BuffDetector::redefineRotatedRectPoints(cv::Point2f p[], cv::RotatedRect rrt)
     {
-        rrt.points(p);
-        cv::Point2f temp;
-        //按X轴排序
-        std::sort(p, p+4,[](cv::Point2f a, cv::Point2f b) {return a.x < b.x; });
-        // X坐标前两个定义左上,左下
-        if (p[0].y > p[1].y) {
-            temp = p[0];
-            p[0] = p[1];
-            p[1] = p[3];
-            p[3] = temp;
-        }
-        else {
-            temp = p[3];
-            p[3] = p[1];
-            p[1] = temp;
-        }
-        // X坐标后两个定义右上右下角
-        if (p[1].y > p[2].y) {
-            temp = p[1];
-            p[1] = p[2];
-            p[2] = temp;
-        }
+        // // 弃用，对于那种细长的旋转矩形会出bug
+        // rrt.points(p);
+        // cv::Point2f temp;
+        // //按X轴排序
+        // std::sort(p, p+4,[](cv::Point2f a, cv::Point2f b) {return a.x < b.x; });
+        // // X坐标前两个定义左上,左下
+        // if (p[0].y > p[1].y) {
+        //     temp = p[0];
+        //     p[0] = p[1];
+        //     p[1] = p[3];
+        //     p[3] = temp;
+        // }
+        // else {
+        //     temp = p[3];
+        //     p[3] = p[1];
+        //     p[1] = temp;
+        // }
+        // // X坐标后两个定义右上右下角
+        // if (p[1].y > p[2].y) {
+        //     temp = p[1];
+        //     p[1] = p[2];
+        //     p[2] = temp;
+        // }
+
+        // 产生了新的排序方案，比上面的好
+        // double angle = rrt.angle * CV_PI / 180.0;
+        // double a = rrt.size.width * 0.5;
+        // double b = rrt.size.height * 0.5;
+        // double sina = sin(angle);
+        // double cosa = cos(angle);
+        // cv::Point2f center = rrt.center;
+        // p[0] = cv::Point2f(center.x + a * cosa - b * sina, center.y + a * sina + b * cosa);
+        // p[1] = cv::Point2f(center.x - a * cosa - b * sina, center.y - a * sina + b * cosa);
+        // p[2] = cv::Point2f(center.x - a * cosa + b * sina, center.y - a * sina - b * cosa);
+        // p[3] = cv::Point2f(center.x + a * cosa + b * sina, center.y + a * sina - b * cosa);
+
+        // 方案三  弃用，编译会报错
+        // cv::Point2f rrt_pts[4];
+	    // rrt.points(rrt_pts);
+        // std::vector<std::pair<float, cv::Point2f>> polar_pts;
+        // polar_pts.emplace_back(std::atan2(rrt_pts[0].y - rrt.center.y, rrt_pts[0].x - rrt.center.x), rrt_pts[0]);
+        // polar_pts.emplace_back(std::atan2(rrt_pts[1].y - rrt.center.y, rrt_pts[1].x - rrt.center.x), rrt_pts[1]);
+        // polar_pts.emplace_back(std::atan2(rrt_pts[2].y - rrt.center.y, rrt_pts[2].x - rrt.center.x), rrt_pts[2]);
+        // polar_pts.emplace_back(std::atan2(rrt_pts[3].y - rrt.center.y, rrt_pts[3].x - rrt.center.x), rrt_pts[3]);
+        // std::sort(polar_pts.begin(), polar_pts.end());
+        // p[0] = polar_pts[0].second;
+        // p[1] = polar_pts[1].second;
+        // p[2] = polar_pts[2].second;
+        // p[3] = polar_pts[3].second;
+
+        // 弃用，编译会报错
+        // cv::Point2f vertices[4];
+        // rrt.points(vertices);
+        // cv::Point2f center = rrt.center;
+        // // 计算每个顶点相对于中心点的极角
+        // std::vector<std::pair<float, cv::Point2f>> polar_pts;
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     polar_pts.emplace_back(std::atan2(vertices[i].y - center.y, vertices[i].x - center.x), vertices[i]);
+        // }
+        // // 按极角排序顶点
+        // std::sort(polar_pts.begin(), polar_pts.end());
+        // // 重新定义顶点顺序
+        // p[0] = polar_pts[0].second;
+        // p[1] = polar_pts[1].second;
+        // p[2] = polar_pts[2].second;
+        // p[3] = polar_pts[3].second;
+
+        // 计算旋转矩形的四个顶点
+        // cv::Point2f pt0, pt1, pt2, pt3;
+        // rrt.points(&pt0, &pt1, &pt2, &pt3);
+        // // 查找最左上角的点
+        // cv::Point2f top_left_point = pt0;
+        // for (int i = 1; i < 4; i++) {
+        //     if (pt[i].x < top_left_point.x || (pt[i].x == top_left_point.x && pt[i].y < top_left_point.y)) {
+        //         top_left_point = pt[i];
+        //     }
+        // }
+        // // 重新排序顶点数组
+        // cv::Point2f sorted_corners[4];
+        // int index = 0;
+        // sorted_corners[index++] = top_left_point;
+        // for (int i = 0; i < 4; i++) {
+        //     if (pt[i] != top_left_point) {
+        //         sorted_corners[index++] = pt[i];
+        //     }
+        // }
+        // if (sorted_corners[1].y > sorted_corners[2].y) {
+        //     std::swap(sorted_corners[1], sorted_corners[2]);
+        // }
+        // // 将重新排序后的顶点存储到原始的顶点数组中
+        // for (int i = 0; i < 4; i++) {
+        //     rect_corners[i] = sorted_corners[i];
+        // }
     }
 
     bool BuffDetector::findRcenter()
@@ -331,11 +413,11 @@ namespace robot_detection
                     r_center.points_4[3] = cv::Point2f(r_center.rect.x - r_width_pixel/2, r_center.rect.y + r_height_pixel/2);
                     
                     r_center.imu_position = AS.pixel2imu(r_center.points_4, BUFF_R);
-                    std::cout<<"r_center.distance      :  "<<r_center.imu_position.norm()<<std::endl;
+                    // std::cout<<"r_center.distance      :  "<<r_center.imu_position.norm()<<std::endl;
                     r_center.buff_position = AS.imu2buff(r_center.imu_position); 
                     
-                    std::cout<<"r_center.imu_position  :  "<<r_center.imu_position.transpose()<<std::endl;
-                    std::cout<<"r_center.buff_position :  "<<r_center.buff_position.transpose()<<std::endl;
+                    // std::cout<<"r_center.imu_position  :  "<<r_center.imu_position.transpose()<<std::endl;
+                    // std::cout<<"r_center.buff_position :  "<<r_center.buff_position.transpose()<<std::endl;
 
 
                     // 剔除不良数值，即与实际距离的值偏差大的
@@ -423,7 +505,7 @@ namespace robot_detection
                 for (int i = 0; i < 4; ++i) {
                     line(findComponents, buff_rrt_pts[i], buff_rrt_pts[(i + 1) % 4], CV_RGB(180, 0, 255),1,cv::LINE_8);
                 }
-                
+
                 bool is_color_ok = matchColor(all_contours[i]);
                 if(is_color_ok)
                     components_rrt.emplace_back(buff_rrt);
@@ -443,23 +525,31 @@ namespace robot_detection
         }
 
         // std::cout<<"components_rrt.size  : "<<components_rrt.size()<<std::endl;
-        // for(int i =0; i<components_rrt.size(); ++i)
-        // {
-        //     cv::Point2f buff_rrt_pts[4];
-        //     components_rrt[i].points(buff_rrt_pts);
-        //     for (int i = 0; i < 4; ++i) {
-        //         line(findComponents, buff_rrt_pts[i], buff_rrt_pts[(i + 1) % 4], CV_RGB(180, 0, 255),1,cv::LINE_8);
-        //     }
-        // }
-        // imshow("findComponents",findComponents);
+        for(int i =0; i<components_rrt.size(); ++i)
+        {
+            cv::Point2f buff_rrt_pts[4];
+            components_rrt[i].points(buff_rrt_pts);
+            for (int i = 0; i < 4; ++i) {
+                line(findComponents, buff_rrt_pts[i], buff_rrt_pts[(i + 1) % 4], CV_RGB(180, 0, 255),1,cv::LINE_8);
+            }
+        }
+        imshow("findComponents",findComponents);
         
         if(components_rrt.size() < 2)
         {
+            // 保存未识别到两个零件的图像
             // error_cnt++;
             // std::string path = "/home/lmx2/error_pic/" + std::to_string(error_cnt) + ".jpg";
             // cv::imwrite(path,_src);
 
-            // std::cout<<"no 2 components !!!"<<std::endl;  // 13 fps 
+            // 输出未识别到的判断条件
+            // double buff_area = cv::contourArea(all_contours[i]);
+            // cv::RotatedRect buff_rrt = cv::minAreaRect(all_contours[i]);
+            // double full_ratio = buff_area / (buff_rrt.size.height * buff_rrt.size.width);
+            // double w = buff_rrt.size.height > buff_rrt.size.width ? buff_rrt.size.height : buff_rrt.size.width;
+            // double h = buff_rrt.size.height < buff_rrt.size.width ? buff_rrt.size.height : buff_rrt.size.width;
+            // double rectangle_ratio = w / h;
+            // std::cout<<"no 2 components !!!"<<buff_area<<"  "<<full_ratio<<"  "<<rectangle_ratio<<std::endl;  // 13 fps 
             return false;
         }
         else
@@ -478,7 +568,6 @@ namespace robot_detection
         r_center.pixel_position = AS.imu2pixel(r_center.imu_position);
 
         cv::circle(matchComponents,r_center.pixel_position,5,cv::Scalar(0,255,0),-1);
-        cv::imshow("matchComponents",matchComponents);
 
         for(int i = 0; i < components_rrt.size(); ++i)
         {
@@ -493,8 +582,9 @@ namespace robot_detection
 
                 bool radius1_ratio_ok = (radius_ratio < 1.6) && (radius_ratio > 1.3) ? true : false;
                 bool radius2_ratio_ok = (radius_ratio < 0.7692) && (radius_ratio > 0.625) ? true : false;
-                bool in_one_line = AS.pointsInLine(r_center.pixel_position,components_rrt[j].center,components_rrt[i].center,10,0);
-                
+                double one_line_angle = AS.pointsInLine(r_center.pixel_position,components_rrt[j].center,components_rrt[i].center,2);
+                bool in_one_line =  one_line_angle < 5 ? true : false;
+
                 if((radius1_ratio_ok || radius2_ratio_ok) && in_one_line)
                 {
                     if(radius1_ratio_ok)
@@ -509,6 +599,9 @@ namespace robot_detection
                     }
 
                     buff_no.pixel_position = (components_rrt[j].center + components_rrt[i].center) / 2;
+
+                    // cv::circle(matchComponents,buff_no.pixel_position,5,cv::Scalar(0,255,0),-1);
+                    // cv::imshow("matchComponents",matchComponents);
                     
                     // double angle_offset = fabs(atan2(components_rrt[j].center.y - r_center.pixel_position.y, components_rrt[j].center.x - r_center.pixel_position.x)/CV_PI*180.0 - atan2(components_rrt[i].center.y - r_center.pixel_position.y, components_rrt[i].center.x - r_center.pixel_position.x)/CV_PI*180.0); 
                     // std::cout<<"data:  "<<angle_offset<<"   "<<in_one_line<<std::endl;
@@ -520,14 +613,13 @@ namespace robot_detection
                     // error_cnt++;
                     // std::string path = "/home/lmx2/error_pic2/" + std::to_string(error_cnt) + ".jpg";
                     // cv::imwrite(path,_src);
-
-                    double angle_offset = fabs(atan2(components_rrt[j].center.y - r_center.pixel_position.y, components_rrt[j].center.x - r_center.pixel_position.x)/CV_PI*180.0 - atan2(components_rrt[i].center.y - r_center.pixel_position.y, components_rrt[i].center.x - r_center.pixel_position.x)/CV_PI*180.0); 
-                    std::cout<<"data:  "<<atan2(components_rrt[j].center.y - r_center.pixel_position.y, components_rrt[j].center.x - r_center.pixel_position.x)/CV_PI*180.0<<"   "<<atan2(components_rrt[i].center.y - r_center.pixel_position.y, components_rrt[i].center.x - r_center.pixel_position.x)/CV_PI*180.0<<std::endl;
+                    // double angle_offset = fabs(atan2(components_rrt[j].center.y - r_center.pixel_position.y, components_rrt[j].center.x - r_center.pixel_position.x)/CV_PI*180.0 - atan2(components_rrt[i].center.y - r_center.pixel_position.y, components_rrt[i].center.x - r_center.pixel_position.x)/CV_PI*180.0); 
+                    // std::cout<<"data:  "<<atan2(components_rrt[j].center.y - r_center.pixel_position.y, components_rrt[j].center.x - r_center.pixel_position.x)/CV_PI*180.0<<"   "<<atan2(components_rrt[i].center.y - r_center.pixel_position.y, components_rrt[i].center.x - r_center.pixel_position.x)/CV_PI*180.0<<std::endl;
                     // std::cout<<"A non-hit BUFF was detected !!!"<<std::endl;
+                    // std::cout<<"No non-hit BUFF found !!!  ---  "<<radius_ratio<<"  " <<one_line_angle<<std::endl;
                 }
             }
         }
-
         return false;
     }
 
@@ -579,7 +671,6 @@ namespace robot_detection
         //         b_idx2 = i;
         //     }
         // }
-
         // buff_no.points_5[0] = out_rrt_pts[0];
         // buff_no.points_5[1] = out_rrt_pts[1];
         // buff_no.points_5[2] = in_rrt_pts[1];
@@ -589,59 +680,117 @@ namespace robot_detection
         // 通过规定顺序来确定五点
         // redefineRotatedRectPoints(out_rrt_pts,buff_no.out_rrt);
         // redefineRotatedRectPoints(in_rrt_pts,buff_no.in_rrt);
-
+        // 展示经过规定后的零件的旋转矩阵的点
         cv::circle(calculateBuffPosition,out_rrt_pts[0],2,cv::Scalar(255,0,0),-1);
         cv::circle(calculateBuffPosition,out_rrt_pts[1],2,cv::Scalar(0,255,0),-1);
         cv::circle(calculateBuffPosition,out_rrt_pts[2],2,cv::Scalar(0,0,255),-1);
-
         cv::circle(calculateBuffPosition,in_rrt_pts[0],2,cv::Scalar(255,0,0),-1);
         cv::circle(calculateBuffPosition,in_rrt_pts[1],2,cv::Scalar(0,255,0),-1);
         cv::circle(calculateBuffPosition,in_rrt_pts[2],2,cv::Scalar(0,0,255),-1);
 
-        cv::imshow("calculateBuffPosition",calculateBuffPosition);
+        // buff坐标系下规定，从x正方向旋转一周为0~360，用这个计算角度差值是有问题的  
+        double angle = atan2((buff_no.pixel_position.y - r_center.pixel_position.y),(buff_no.pixel_position.x - r_center.pixel_position.x));
+        angle = -angle / CV_PI * 180;
+        if(angle<0)
+            angle += 360;
+        current_angle = angle;
+        last_angle = current_angle;
 
-        // // buff坐标系下规定，从x正方向旋转一周为0~360，用这个计算角度差值是有问题的  
-        // double angle = atan2((buff_no.buff_position[2] - r_center.buff_position[2]),(buff_no.buff_position[0] - r_center.buff_position[0]));
-        // angle = angle / CV_PI * 180;
-        // if(angle<0)
-        //     angle += 360;
-        // current_angle = angle;
-        // last_angle = current_angle;
-        // // 确定五点的输入顺序
+        // // 确定五点的输入顺序   (redefineRotatedRectPoints + this)
         // if(angle>45 && angle<=135)
-        // {
-        //     buff_no.points_5[0] = out_rrt_pts[0];
-        //     buff_no.points_5[1] = out_rrt_pts[3];
-        //     buff_no.points_5[2] = in_rrt_pts[2];
-        //     buff_no.points_5[3] = in_rrt_pts[1];
-        // }
-        // else if(angle>135 && angle<=225)
         // {
         //     buff_no.points_5[0] = out_rrt_pts[3];
         //     buff_no.points_5[1] = out_rrt_pts[2];
         //     buff_no.points_5[2] = in_rrt_pts[1];
-        //     buff_no.points_5[3] = in_rrt_pts[0];
+        //     buff_no.points_5[3] = r_center.pixel_position;
+        //     buff_no.points_5[4] = in_rrt_pts[0];
         // }
-        // else if(angle>225 && angle<=315)
+        // else if(angle>135 && angle<=225)
         // {
         //     buff_no.points_5[0] = out_rrt_pts[2];
         //     buff_no.points_5[1] = out_rrt_pts[1];
         //     buff_no.points_5[2] = in_rrt_pts[0];
-        //     buff_no.points_5[3] = in_rrt_pts[3];
+        //     buff_no.points_5[3] = r_center.pixel_position;
+        //     buff_no.points_5[4] = in_rrt_pts[3];
         // }
-        // else
+        // else if(angle>225 && angle<=315)
         // {
         //     buff_no.points_5[0] = out_rrt_pts[1];
         //     buff_no.points_5[1] = out_rrt_pts[0];
         //     buff_no.points_5[2] = in_rrt_pts[3];
-        //     buff_no.points_5[3] = in_rrt_pts[2];
+        //     buff_no.points_5[3] = r_center.pixel_position;
+        //     buff_no.points_5[4] = in_rrt_pts[2];
         // }
-        // buff_no.points_5[4] = r_center.pixel_position;
+        // else
+        // {
+        //     buff_no.points_5[0] = out_rrt_pts[0];
+        //     buff_no.points_5[1] = out_rrt_pts[3];
+        //     buff_no.points_5[2] = in_rrt_pts[2];
+        //     buff_no.points_5[3] = r_center.pixel_position;
+        //     buff_no.points_5[4] = in_rrt_pts[1];
+        // }
+
+        // 确定五点的输入顺序   (origin，默认使用官方的旋转矩形的角点的顺序) (好用，只需要删除个别异常值)
+        // 引入旋转矩形的宽高来做额外限制 (plus)
+        double out_h = buff_no.out_rrt.size.height;
+        double out_w = buff_no.out_rrt.size.width;
+        double in_h = buff_no.in_rrt.size.height;
+        double in_w = buff_no.in_rrt.size.width;
+        if(angle>0 && angle<90 && out_h>out_w && in_h>in_w)
+        {
+            buff_no.points_5[0] = out_rrt_pts[1];
+            buff_no.points_5[1] = out_rrt_pts[0];
+            buff_no.points_5[2] = in_rrt_pts[3];
+            buff_no.points_5[3] = r_center.pixel_position;
+            buff_no.points_5[4] = in_rrt_pts[2];
+        }
+        else if(angle>90 && angle<180 && out_h<out_w && in_h<in_w)
+        {
+            buff_no.points_5[0] = out_rrt_pts[0];
+            buff_no.points_5[1] = out_rrt_pts[3];
+            buff_no.points_5[2] = in_rrt_pts[2];
+            buff_no.points_5[3] = r_center.pixel_position;
+            buff_no.points_5[4] = in_rrt_pts[1];
+        }
+        else if(angle>180 && angle<270 && out_h>out_w && in_h>in_w)
+        {
+            buff_no.points_5[0] = out_rrt_pts[3];
+            buff_no.points_5[1] = out_rrt_pts[2];
+            buff_no.points_5[2] = in_rrt_pts[1];
+            buff_no.points_5[3] = r_center.pixel_position;
+            buff_no.points_5[4] = in_rrt_pts[0];
+        }
+        else if(angle>270 && angle<360 && out_h<out_w && in_h<in_w)
+        {
+            buff_no.points_5[0] = out_rrt_pts[2];
+            buff_no.points_5[1] = out_rrt_pts[1];
+            buff_no.points_5[2] = in_rrt_pts[0];
+            buff_no.points_5[3] = r_center.pixel_position;
+            buff_no.points_5[4] = in_rrt_pts[3];
+        }
+
+        for (int m = 0; m < 5; ++m)
+        {
+            line(calculateBuffPosition, buff_no.points_5[m], buff_no.points_5[(m + 1) % 5], CV_RGB(0, 255, 0),2,cv::LINE_8);
+        } 
+        // cv::circle(calculateBuffPosition,buff_no.points_5[0],3,cv::Scalar(255,0,0),-1);
+        // // cv::circle(calculateBuffPosition,buff_no.points_5[1],2,cv::Scalar(0,255,0),-1);
+        // // cv::circle(calculateBuffPosition,buff_no.points_5[2],2,cv::Scalar(0,0,255),-1);
+        // cv::circle(calculateBuffPosition,buff_no.points_5[3],3,cv::Scalar(255,255,0),-1);
+        // // cv::circle(calculateBuffPosition,buff_no.points_5[4],2,cv::Scalar(255,0,0),-1);
+        cv::putText(calculateBuffPosition,std::to_string(angle),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        std::string out = std::to_string(buff_no.out_rrt.angle) + "   " + std::to_string(buff_no.out_rrt.size.width) + "   " + std::to_string(buff_no.out_rrt.size.height);
+        cv::putText(calculateBuffPosition,out,cv::Point2f(0,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        std::string in = std::to_string(buff_no.in_rrt.angle) + "   " + std::to_string(buff_no.in_rrt.size.width) + "   " + std::to_string(buff_no.in_rrt.size.height);
+        cv::putText(calculateBuffPosition,in,cv::Point2f(0,90),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+
 
         // // 未击打大符坐标计算
-        // buff_no.imu_position = AS.pixel2imu(buff_no.points_5, BUFF_NO);
+        buff_no.imu_position = AS.pixel2imu(buff_no.points_5, BUFF_NO);
+        std::cout<<"buff_no.imu_position : "<< buff_no.imu_position<<" &  dis : "<<buff_no.imu_position.norm()<<std::endl;
         // buff_no.buff_position = AS.imu2buff(buff_no.imu_position);
 
+        cv::imshow("calculateBuffPosition",calculateBuffPosition);  
         return true;
     }
 

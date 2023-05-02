@@ -108,7 +108,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
     // show image
-    cv::imshow("main-result-image", src);
+    // cv::imshow("main-result-image", src);
     cv::waitKey(1);
 }
 

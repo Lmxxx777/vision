@@ -330,17 +330,18 @@ namespace robot_detection{
         }
         else if(type == BUFF_NO)
         {
+            // 五点为什么会报错，先用四点，误差有点离谱 (要么官方场地不标准，要么真的大误差)
             ps = {
                     {-buff_out_w / 2 , -buff_out_h , 0.},
                     { buff_out_w / 2 , -buff_out_h , 0.},
                     { buff_in_w / 2 ,  buff_in_h , 0.},
+                    // {0 , buff_radius, -buff_convex},
                     {-buff_in_w / 2 ,  buff_in_h , 0.},
-                    {0 , buff_radius, -buff_convex},
             };
             pu.push_back(p[0]);
             pu.push_back(p[1]);
             pu.push_back(p[2]);
-            pu.push_back(p[3]);
+            // pu.push_back(p[3]);
             pu.push_back(p[4]);
         }
         else if(type == BUFF_YES)
@@ -452,23 +453,22 @@ namespace robot_detection{
         return rpy;
     }
 
-        bool AngleSolve::pointsInLine(cv::Point2f p1, cv::Point2f p2, cv::Point2f p3, double error, int type)
+    double AngleSolve::pointsInLine(cv::Point2f p1, cv::Point2f p2, cv::Point2f p3, int type)
     {
-        if(type)
+        switch (type)
         {
-            // 斜率
-            if(fabs((p3.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p3.x - p1.x)) <= error)
-                return true;
-            else
-                return false;
-        }
-        else
-        {
-            // 夹角
-            if(fabs(atan2(p2.y - p1.y, p2.x - p1.x)/CV_PI*180.0 - atan2(p3.y - p1.y, p3.x - p1.x)/CV_PI*180.0) <= error)
-                return true;
-            else
-                return false;
+        case 0:     // 斜率
+            return fabs((p3.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p3.x - p1.x));
+        
+        case 1:     // 夹角 夹角在PI和-PI的位置会 (179.567 - (-179.08))
+            return fabs(atan2(p2.y - p1.y, p2.x - p1.x)/CV_PI*180.0 - atan2(p3.y - p1.y, p3.x - p1.x)/CV_PI*180.0);
+
+        case 2:     // TODO: 采用余弦定理，角度除非切换符叶否则不会出现
+            double numerator = POINT_DIST(p2,p1) * POINT_DIST(p2,p1) + POINT_DIST(p3,p1) * POINT_DIST(p3,p1) - POINT_DIST(p2,p3) * POINT_DIST(p2,p3);
+            double denominator = 2 * POINT_DIST(p2,p1) * POINT_DIST(p3,p1);
+            double cos_delta_angle =  numerator / denominator;
+            double delta_angle = acos(cos_delta_angle) * 180.0 / CV_PI;
+            return fabs(delta_angle);
         }
     }
 
