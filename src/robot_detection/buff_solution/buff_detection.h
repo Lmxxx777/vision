@@ -1,9 +1,10 @@
 #include <iostream>
 #include <cmath>
+#include <string>
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
-#include "robot_status.h"
+
 #include "gimbal_control.h"
 
 
@@ -14,7 +15,7 @@ namespace robot_detection
     struct R_center
     {
         cv::Point2f pixel_position;
-        cv::Point2f  points_4[4];
+        cv::Point2f points_4[4];
         cv::RotatedRect rotatedrect;
         cv::Rect rect;
         double radius;
@@ -22,8 +23,8 @@ namespace robot_detection
         Eigen::Vector3d buff_position;
         Eigen::Vector3d imu_position;
         Eigen::Vector3d cam_position;
-        std::vector<Eigen::Vector3d> points_3d;
-        std::vector<cv::Point2f> points_2d;
+        std::vector<Eigen::Vector3d> points_3d; // 大符坐标系的点
+        std::vector<cv::Point2f> points_2d;     // 大符坐标系的点
         R_center() = default;
     };
 
@@ -55,6 +56,9 @@ namespace robot_detection
     class BuffDetector
     {
     public:
+
+        int error_cnt = 0;
+
         BuffDetector();
         void reset();
         bool detectResult(const cv::Mat src, chrono_time now_time);

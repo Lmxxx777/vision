@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include <ros/package.h>
 
 #define INPUT_WIDTH 20
 #define INPUT_HEIGHT 30

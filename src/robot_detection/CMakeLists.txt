@@ -29,10 +29,14 @@ find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
 # find_package(Ceres REQUIRED)
 # find_package(matplotlib_cpp REQUIRED)
+# find_package(catkin REQUIRED COMPONENTS
+#   rospack
+#   roslib
+# )
 
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES armor_detection
+#  LIBRARIES robot_detection
  CATKIN_DEPENDS roscpp rospy std_msgs rosconsole sensor_msgs cv_bridge image_geometry image_proc image_transport message_filters camera_info_manager geometry_msgs tf robot_msgs
 #  DEPENDS system_lib
 )
@@ -90,6 +94,8 @@ target_link_libraries(robot_detection
   ${OpenCV_LIBS}
   ${Eigen3_LIBRARIES}
   ${Boost_INCLUDE_DIRS}
+  # ${rospack_LIBRARIES}
+  # ${roslib_LIBRARIES}
   # Ceres::ceres
   robot_detection_lib
 )

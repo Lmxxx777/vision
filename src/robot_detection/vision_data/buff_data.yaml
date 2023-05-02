@@ -4,11 +4,11 @@
 binary_threshold: 80
 buff_color: RED
 
-# R
-fit_circle_counts: 400
+# R  20
+fit_circle_counts: 20
 r_actual_distance: 6.5
 error_range: 1
-# 120.5
+# 120.5  80~200
 r_max_area: 200
 r_min_area: 80
 # 0.614796
@@ -18,9 +18,9 @@ r_width_pixel: 18
 r_height_pixel: 18
 
 # Buff_no
-no_buff_area_max: 1
-no_buff_area_min: 1
-no_full_ratio_min: 1
+no_buff_area_max: 400
+no_buff_area_min: 150
+no_full_ratio_min: 0.1
 no_full_ratio_max: 1
 
 # Buff_yes

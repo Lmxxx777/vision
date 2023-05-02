@@ -8,13 +8,15 @@ void KalmanFilter::initial_KF()
              0, 1, 0, 0, 0, 0,
              0, 0, 1, 0, 0, 0;
 
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
+        // std::string package_path = ros::package::getPath("robot_detection");
+        std::string package_path = "/home/lmx2/vision_ws_2/src/robot_detection";
+        cv::FileStorage fs(package_path  + "/vision_data/predict_data.yaml", cv::FileStorage::READ);
         cv::Mat Q_, R_;
         fs["Q"] >> Q_;
         fs["R"] >> R_;
         fs.release();
-
-        cv::cv2eigen(R_,R);
+        
+        cv::cv2eigen(R_,R);                                       
         cv::cv2eigen(Q_,Q);
 
         P <<1, 0, 0, 0, 0, 0,

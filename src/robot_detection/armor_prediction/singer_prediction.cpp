@@ -4,11 +4,13 @@ namespace robot_detection{
 
 Skalman::Skalman()
 {
-    cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/predict_data.yaml", cv::FileStorage::READ);
+    // std::string package_path = ros::package::getPath("robot_detection");
+    std::string package_path = "/home/lmx2/vision_ws_2/src/robot_detection";
+    cv::FileStorage fs(package_path  + "/vision_data/predict_data.yaml", cv::FileStorage::READ);
+    
     shoot_delay = (double)fs["shoot_delay"];
     error_distance = (double)fs["error_distance"];
     fs.release();
-
     //init H
     H << 1,0,0,0,0,0,
             0,0,0,1,0,0;

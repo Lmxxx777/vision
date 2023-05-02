@@ -95,10 +95,10 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("enemy_color  is  %d  \n", enemy_color);
     // ROS_INFO("bullet_speed is  %lf \n", bullet_speed);
     // ROS_INFO("mode         is  %x  \n", mode);
-    buff_detection.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
+    // buff_detection.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
 
     // buff-detecting
-    buff_detection.detectResult(src,now_time);
+    // buff_detection.detectResult(src,now_time);
 
 
     // Time
@@ -204,7 +204,7 @@ int main()
         0.021370,
         0.398140,
     };
-    buff_detection.AS.init(0, 0, 0, quaternion, 28);
+    // buff_detection.AS.init(0, 0, 0, quaternion, 28);
     // buff-detecting
     robot_detection::chrono_time now_time = std::chrono::high_resolution_clock::now();
 

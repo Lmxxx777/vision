@@ -10,7 +10,9 @@ namespace robot_detection{
 
     AngleSolve::AngleSolve()
     {
-        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/control_data.yaml", cv::FileStorage::READ);
+        // std::string package_path = ros::package::getPath("robot_detection");
+        std::string package_path = "/home/lmx2/vision_ws_2/src/robot_detection";
+        cv::FileStorage fs(package_path + "/vision_data/control_data.yaml", cv::FileStorage::READ);
         
         big_w = (float)fs["big_w"];
         big_h = (float)fs["big_h"];

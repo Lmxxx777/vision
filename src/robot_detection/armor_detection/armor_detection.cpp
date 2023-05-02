@@ -17,7 +17,10 @@ namespace robot_detection {
     ArmorDetector::ArmorDetector()
     {
         save_num_cnt = 0;
-        FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/detect_data.yaml", FileStorage::READ);
+        
+        // std::string package_path = ros::package::getPath("robot_detection");
+        std::string package_path = "/home/lmx2/vision_ws_2/src/robot_detection";
+        FileStorage fs(package_path + "/vision_data/detect_data.yaml", FileStorage::READ);
 
         //enemy_color
         enemy_color = COLOR(((string)fs["enemy_color"]));

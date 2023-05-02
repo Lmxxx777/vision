@@ -1,5 +1,6 @@
 #pragma once
 #include <opencv2/opencv.hpp>
+#include <ros/package.h>
 
 namespace robot_detection {
     //basic parameter
