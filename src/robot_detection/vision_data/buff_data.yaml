@@ -14,8 +14,8 @@ r_min_area: 80
 # 0.614796
 r_full_ratio_min: 0.2
 r_full_ratio_max: 1
-r_width_pixel: 18
-r_height_pixel: 18
+r_width_pixel: 20
+r_height_pixel: 20
 
 # Buff_no
 no_buff_area_max: 400

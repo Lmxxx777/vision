@@ -87,8 +87,9 @@ namespace robot_detection
         bool initYaw();
 
         // image
-        cv::Mat _src;
-        cv::Mat _binary;
+        cv::Mat src;
+        cv::Mat show_src;
+        cv::Mat binary;
         int binary_threshold;
         int buff_color;
         std::vector<std::vector<cv::Point>> all_contours;
@@ -116,6 +117,7 @@ namespace robot_detection
         // double r_
         bool findRcenter();
         bool fitCircle();
+        bool refindRcenter();
 
         // Buff_components
         std::vector<cv::RotatedRect> components_rrt;

@@ -7,9 +7,9 @@ namespace robot_detection {
     DNN_detect::DNN_detect()
     {
         // std::string package_path = ros::package::getPath("robot_detection");
-        std::string package_path = "/home/lmx2/vision_ws_2/src/robot_detection";
-        cv::FileStorage fs(package_path  + "/vision_data/dnn_data.yaml", FileStorage::READ);
-        net_path = package_path + (std::string)fs["net_path"];
+        // std::string package_path = "/home/lmx2/vision_ws_2/src/robot_detection";
+        cv::FileStorage fs("/home/lmx2/vision_ws_2/src/robot_detection/vision_data/dnn_data.yaml", FileStorage::READ);
+        net_path = (std::string)fs["net_path"];
         input_width = (int)fs["input_width"];
         input_height = (int)fs["input_height"];
         net = dnn::readNetFromONNX(net_path);

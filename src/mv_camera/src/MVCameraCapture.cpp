@@ -70,7 +70,7 @@ void MVCameraCapture::open(int32_t device_id)
 
 // 手动曝光，曝光时间 2ms
     CameraSetAeState(hCamera_, FALSE);
-    CameraSetExposureTime(hCamera_, 1500);
+    CameraSetExposureTime(hCamera_, 1200);
     // CameraSetWbMode(hCamera_,true);
 
 

@@ -98,13 +98,13 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     // buff-detecting
     buff_detection.detectResult(src, now_time);
-
+    cv::imshow("show_src",buff_detection.show_src);
 
     // Time
     ros::Time end = ros::Time::now();
     ros::Duration duration_t = end - begin;
     double delta_tt = duration_t.toSec();
-    cv::putText(src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    // cv::putText(buff_detection.src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
     // show image

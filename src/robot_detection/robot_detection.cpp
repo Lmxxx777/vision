@@ -423,7 +423,7 @@ int main(int argc, char  *argv[])
     // // fdilink_ahrs
     // message_filters::Subscriber<robot_msgs::EulerAngles> camera_imu_sub(nh, "euler_angles", 1);  
     // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::EulerAngles> MySyncPolicy;
-    // // c 板
+    // c 板
     message_filters::Subscriber<robot_msgs::vision> camera_imu_sub(nh, "vision_data", 1);  
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, robot_msgs::vision> MySyncPolicy;
     // // // // ExactTime takes a queue size as its constructor argument, hence MySyncPolicy(10)

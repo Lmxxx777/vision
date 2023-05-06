@@ -27,6 +27,11 @@ namespace robot_detection{
         buff_radius = (float)fs["buff_radius"];
         buff_convex = (float)fs["buff_convex"];
 
+        buff_out_w *= 1.4;
+        buff_out_h *= 1.4;
+        buff_in_w  *= 1.4;
+        buff_in_h  *= 1.4;
+
         fs["self_type"] >> self_type;
 
         fs[self_type]["F_MAT"] >> F_MAT;
@@ -415,7 +420,7 @@ namespace robot_detection{
     {
         
         Eigen::Vector3d rpy;
-        rpy[2] = atan2(Pos[1],Pos[0]) / CV_PI*180.0 - 90;
+        // rpy[2] = atan2(Pos[1],Pos[0]) / CV_PI*180.0 - 90;
         rpy[2] = -atan2(Pos[0],Pos[1]) / CV_PI*180.0 ;
 
         rpy[1] = atan2(Pos[2],Pos[1]) / CV_PI*180.0;
