@@ -345,14 +345,19 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
         line(src, vertice_armor_match[i], vertice_armor_match[(i + 1) % 4], CV_RGB(0, 255, 0),2,cv::LINE_8);
     }
 
+    cv::Point2f bullet = Track.AS.imu2pixel(Track.bullet_point);
+    cv::circle(src,bullet,3,cv::Scalar(150,100,255),-1);
+
     cv::putText(src,"camera_position",cv::Point2f(0,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.camera_position[0]),cv::Point2f(0,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.camera_position[1]),cv::Point2f(0,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.camera_position[2]),cv::Point2f(0,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     
-    cv::Point2f bullet = Track.AS.imu2pixel(Track.bullet_point);
-    cv::circle(src,bullet,3,cv::Scalar(150,100,255),-1);
-
+    cv::putText(src,"world_position",cv::Point2f(1280 - 300,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.world_position[0]),cv::Point2f(1280 - 300,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.world_position[1]),cv::Point2f(1280 - 300,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.world_position[2]),cv::Point2f(1280 - 300,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
+    
     cv::putText(src,"predict_position",cv::Point2f(1280 - 900,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"x  : "+std::to_string(Track.predicted_position[0]),cv::Point2f(1280 - 900,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"y  : "+std::to_string(Track.predicted_position[1]),cv::Point2f(1280 - 900,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
@@ -362,12 +367,6 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     cv::putText(src,"x  : "+std::to_string(Track.bullet_point[0]),cv::Point2f(1280 - 600,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"y  : "+std::to_string(Track.bullet_point[1]),cv::Point2f(1280 - 600,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
     cv::putText(src,"z  : "+std::to_string(Track.bullet_point[2]),cv::Point2f(1280 - 600,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-
-    cv::putText(src,"world_position",cv::Point2f(1280 - 300,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"x  : "+std::to_string(Track.enemy_armor.world_position[0]),cv::Point2f(1280 - 300,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"y  : "+std::to_string(Track.enemy_armor.world_position[1]),cv::Point2f(1280 - 300,1024 - 90),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    cv::putText(src,"z  : "+std::to_string(Track.enemy_armor.world_position[2]),cv::Point2f(1280 - 300,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
-    
 
     // 用预测位置为中心点，选择的装甲板画框
     cv::Point2f armor_singer_center = Track.AS.imu2pixel(Track.predicted_position);

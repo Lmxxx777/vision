@@ -6,7 +6,7 @@ buff_color: RED
 
 # R  20
 fit_circle_counts: 20
-r_actual_distance: 6.5
+r_actual_distance: 7
 error_range: 1
 # 120.5  80~200
 r_max_area: 200
@@ -14,14 +14,14 @@ r_min_area: 80
 # 0.614796
 r_full_ratio_min: 0.2
 r_full_ratio_max: 1
-r_width_pixel: 20
-r_height_pixel: 20
+r_width_pixel: 16.5
+r_height_pixel: 16.5
 
 # Buff_no
-no_buff_area_max: 400
+no_buff_area_max: 800
 no_buff_area_min: 150
 no_full_ratio_min: 0.1
-no_full_ratio_max: 1
+no_full_ratio_max: 0.6
 
 # Buff_yes
 yes_buff_area_max: 1

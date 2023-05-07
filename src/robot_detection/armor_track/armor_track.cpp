@@ -285,7 +285,7 @@ namespace robot_detection {
                 else
                 {
                     // std::cout<<"no"<<std::endl;
-                    std::cout<<"match_id: "<<matched_armor.id<<" || min_position_diff(m):    "<<min_position_diff<<std::endl;
+                    // std::cout<<"match_id: "<<matched_armor.id<<" || min_position_diff(m):    "<<min_position_diff<<std::endl;
                     // 本帧内是否有相同ID
                     // double same_armor_distance = DBL_MAX;
                     for (auto & armor : find_armors)
@@ -298,7 +298,7 @@ namespace robot_detection {
                             {
                                 matched_armor = enemy_armor;
                                 predicted_enemy = KF.update(matched_armor.world_position);
-                                std::cout<<"track_temp_lost!!   " << switch_armor_cnt <<std::endl;
+                                // std::cout<<"track_temp_lost!!   " << switch_armor_cnt <<std::endl;
                                 switch_armor_cnt ++;
                             }
                             else
@@ -538,7 +538,7 @@ namespace robot_detection {
             else
             {
                 // std::cout<<"no"<<std::endl;
-                std::cout<<"match_id: "<<matched_armor.id<<" || min_position_diff(m):    "<<min_position_diff<<std::endl;
+                // std::cout<<"match_id: "<<matched_armor.id<<" || min_position_diff(m):    "<<min_position_diff<<std::endl;
                 // 本帧内是否有相同ID
                 // double same_armor_distance = DBL_MAX;
                 for (auto & armor : find_armors)
@@ -551,7 +551,7 @@ namespace robot_detection {
                         {
                             matched_armor = enemy_armor;
                             predicted_enemy = KF.update(matched_armor.world_position);
-                            std::cout<<"track_temp_lost!!   " << switch_armor_cnt <<std::endl;
+                            // std::cout<<"track_temp_lost!!   " << switch_armor_cnt <<std::endl;
                             switch_armor_cnt ++;
                         }
                         else
@@ -670,7 +670,7 @@ namespace robot_detection {
         // if(is_aim_virtual_armor)
             KF.setXPost(enemy_armor.world_position);
             // KF.setPosAndSpeed(enemy_armor.world_position,predicted_enemy.tail(3));
-        std::cout<<"predict speed:   "<<predicted_enemy.tail(3).transpose()<<std::endl;
+        // std::cout<<"predict speed:   "<<predicted_enemy.tail(3).transpose()<<std::endl;
 
         KF.setF(
             dt

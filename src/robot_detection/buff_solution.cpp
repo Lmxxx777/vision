@@ -86,7 +86,22 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     float bullet_speed = vision_data.shoot_spd;
     int mode = vision_data.shoot_sta;
 
-    bullet_speed = 28;
+    // bullet_speed = 28;
+
+
+    // TODO: enemy color set 1-RED 2-BLUE
+    // enemy_color = 7; 
+    int color;
+    if(enemy_color == 7)
+    {
+        color = robot_detection::BLUE;
+    }
+    else if(enemy_color == 107)
+    {
+        color = robot_detection::RED;
+    }
+    // std::cout<<"buff_color:  "<<color<<std::endl;
+
     // TODO: 先验证数据的情况
     // ROS_INFO("gimbal_roll  is  %lf \n", roll);
     // ROS_INFO("gimbal_pitch is  %lf \n", pitch);
@@ -96,19 +111,45 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // ROS_INFO("mode         is  %x  \n", mode);
     buff_detection.AS.init(roll, pitch, yaw, quaternion, bullet_speed);
 
+    // for test
+    color = 2;
+
     // buff-detecting
-    buff_detection.detectResult(src, now_time);
-    cv::imshow("show_src",buff_detection.show_src);
+    bool buff_bool = false;
+    buff_bool = buff_detection.detectResult(src, color, now_time);
+    buff_detection.show();
+
+    // port
+    robot_msgs::robot_ctrl vision_send_data;
+    if(buff_bool)
+    {
+        vision_send_data.fire_command = 0x31;
+        vision_send_data.target_lock = 0x31;
+        vision_send_data.pitch = buff_detection.control_angle[1];
+        vision_send_data.yaw = buff_detection.control_angle[2];
+        cv::circle(buff_detection.show_src,cv::Point(640,20),20,cv::Scalar(0,255,0),-1);
+    }
+    else
+    {
+        vision_send_data.fire_command = 0x32;
+        vision_send_data.target_lock = 0x32;
+        vision_send_data.pitch = buff_detection.control_angle[1];
+        vision_send_data.yaw = buff_detection.control_angle[2];
+        cv::circle(buff_detection.show_src,cv::Point(640,20),20,cv::Scalar(0,0,255),-1);
+    }
+
+    // send port gimbal message 
+    vision_pub_.publish(vision_send_data);  
 
     // Time
     ros::Time end = ros::Time::now();
     ros::Duration duration_t = end - begin;
     double delta_tt = duration_t.toSec();
-    // cv::putText(buff_detection.src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(0,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+    cv::putText(buff_detection.show_src,"FPS      : "+std::to_string(1/delta_tt),cv::Point2f(1280-300,30),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
     // ROS_INFO("FPS %lf \n", 1/delta_tt);
 
     // show image
-    // cv::imshow("main-result-image", src);
+    cv::imshow("show_src",buff_detection.show_src);
     cv::waitKey(1);
 }
 

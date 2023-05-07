@@ -21,6 +21,7 @@ namespace robot_detection
         cv::Rect rect;
         double radius;
         double distance;
+        Eigen::Vector2d buff_position_2d;
         Eigen::Vector3d buff_position;
         Eigen::Vector3d imu_position;
         Eigen::Vector3d cam_position;
@@ -34,11 +35,13 @@ namespace robot_detection
     {
         cv::RotatedRect in_rrt;
         cv::RotatedRect out_rrt;
+        Eigen::Vector2d buff_position_2d;
         Eigen::Vector3d buff_position;
         Eigen::Vector3d imu_position;
         Eigen::Vector3d cam_position;
         cv::Point2f pixel_position;
         cv::Point2f points_5[5];
+        double angle;
         Buff_no() = default;
     };
 
@@ -62,7 +65,9 @@ namespace robot_detection
 
         BuffDetector();
         void reset();
-        bool detectResult(const cv::Mat src, chrono_time now_time);
+        bool detectResult(const cv::Mat _src, int color, chrono_time now_time);
+        void show();
+        Eigen::Vector3d control_angle;
 
         // 0：R未找到，1：找一对括号，2：已经击中一个，5：差最后一个
         int state;
@@ -77,12 +82,15 @@ namespace robot_detection
         bool isClockwise;       // true表示顺时针，false表示逆时针
         int rotate_direction;   // -1表示顺时针，1表示逆时针     ------------!!!!!!---attention---!!!!!!------------
         double current_angle;
+        double delta_angle;
+        double delta_time;
         double rotate_speed;
         double const_rotate_speed;  // 60°/s
 
         Eigen::Vector3d bullet_position;
 
         AngleSolve AS;
+        Eigen::Vector3d initial_yaw;
         bool isInitYaw;
         bool initYaw();
 
@@ -126,6 +134,7 @@ namespace robot_detection
         bool matchComponents();
 
         //Buff calculation
+        Eigen::Vector3d buff_coordinate;
         double maintainAngleLegal(double angle);
         bool calculateBuffPosition();
         bool calculateScaleRatio();

@@ -5,7 +5,7 @@ enemy_color: BLUE
 # binary_thresh
 binThresh: 200
 
-redBinThresh: 50
+redBinThresh: 20
 blueBinThresh: 150
 
 # light_judge_condition

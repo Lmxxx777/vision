@@ -1,7 +1,7 @@
 #include "armor_detection.h"
 
 #define BINARY_SHOW
-// #define DRAW_LIGHTS_CONTOURS
+#define DRAW_LIGHTS_CONTOURS
 // #define DRAW_LIGHTS_RRT
 // #define SHOW_NUMROI
 // #define ERROR_DETECTION

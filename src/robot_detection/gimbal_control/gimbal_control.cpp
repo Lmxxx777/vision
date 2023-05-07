@@ -27,10 +27,10 @@ namespace robot_detection{
         buff_radius = (float)fs["buff_radius"];
         buff_convex = (float)fs["buff_convex"];
 
-        buff_out_w *= 1.4;
-        buff_out_h *= 1.4;
-        buff_in_w  *= 1.4;
-        buff_in_h  *= 1.4;
+        buff_out_w *= 1.1;
+        buff_out_h *= 1.1;
+        buff_in_w  *= 1.1;
+        buff_in_h  *= 1.1;
 
         fs["self_type"] >> self_type;
 
@@ -447,8 +447,6 @@ namespace robot_detection{
         world_dropPosition = airResistanceSolve(predicted_position,pitch);//calculate gravity and air resistance
         Eigen::Vector3d rpy = yawPitchSolve(world_dropPosition);//get need yaw and pitch
 
-
-
         rpy[1] = pitch;
         
         rpy[0] += gimbal_offset_angle[0];
@@ -473,6 +471,11 @@ namespace robot_detection{
             double denominator = 2 * POINT_DIST(p2,p1) * POINT_DIST(p3,p1);
             double cos_delta_angle =  numerator / denominator;
             double delta_angle = acos(cos_delta_angle) * 180.0 / CV_PI;
+
+            // std::cout<<"------------------"<<std::endl;
+            // std::cout<<numerator<<"  "<<denominator<<"  "<<cos_delta_angle<<std::endl;
+            // std::cout<<"------------------"<<std::endl;
+
             return fabs(delta_angle);
         }
     }

@@ -7,9 +7,9 @@
     respawn="true"
     >
     <remap from="/mv_camera_pub/image_raw" to="/image_raw" />
-  </node> -->
+  </node>
 
-  <!-- <node 
+  <node 
     name="simple_robot" 
     pkg="simple_robot" 
     type="simple_robot" 
