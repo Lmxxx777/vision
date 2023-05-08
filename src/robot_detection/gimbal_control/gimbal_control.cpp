@@ -26,11 +26,12 @@ namespace robot_detection{
         buff_out_h = (float)fs["buff_out_h"];
         buff_radius = (float)fs["buff_radius"];
         buff_convex = (float)fs["buff_convex"];
+        buff_scale_ratio = (float)fs["buff_scale_ratio"];
 
-        buff_out_w *= 1.1;
-        buff_out_h *= 1.1;
-        buff_in_w  *= 1.1;
-        buff_in_h  *= 1.1;
+        buff_out_w *= buff_scale_ratio;
+        buff_out_h *= buff_scale_ratio;
+        buff_in_w  *= buff_scale_ratio;
+        buff_in_h  *= buff_scale_ratio;
 
         fs["self_type"] >> self_type;
 
@@ -176,8 +177,7 @@ namespace robot_detection{
         Vector3d tmp_pixel;
         tmp_pixel = F_EGN * cam_pos;
 //         std::cout<<"tmp_pixel: "<<tmp_pixel<<std::endl;
-        cv::Point2f pixel_pos = Point2f((float)tmp_pixel[0]/tmp_pixel[2],(float)tmp_pixel[1]/tmp_pixel[2]);
-
+        cv::Point2f pixel_pos = cv::Point2f((float)tmp_pixel[0]/tmp_pixel[2],(float)tmp_pixel[1]/tmp_pixel[2]);
         return pixel_pos;
     }
 
@@ -203,7 +203,16 @@ namespace robot_detection{
         return armor.camera_position;
     }
 
-        Eigen::Vector3d AngleSolve::pnp2imu(Eigen::Vector3d pos)
+    // p_c = R_inv * (p_p - t)
+    // 其中，p_p是像素坐标系下的点，p_c是相机坐标系下的点，R_inv是旋转矩阵的逆矩阵，t是平移矩阵。
+    Eigen::Vector3d AngleSolve::pixel2cam(cv::Point2f pixel, float depth)
+    {
+        Eigen::Vector3d pixel_3d = {pixel.x, pixel.y, 1};
+        Eigen::Vector3d cam_pos = rv.inverse() * (pixel_3d - tv);
+        return cam_pos;
+    }
+
+    Eigen::Vector3d AngleSolve::pnp2imu(Eigen::Vector3d pos)
     {
         Eigen::Vector3d camera_position = pnp2cam(pos);
         Eigen::Vector3d imu_pos = cam2imu(camera_position);

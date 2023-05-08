@@ -38,7 +38,6 @@ namespace robot_detection{
         Eigen::Matrix<double,3,3> rotated_matrix;
         Eigen::Matrix<double,3,3> coordinate_matrix;
 
-
         AngleSolve();
 
         void init(float r, float p, float y, float quat[4], float speed);
@@ -55,6 +54,7 @@ namespace robot_detection{
         cv::Point2f imu2pixel(Eigen::Vector3d imu_pos);
         Eigen::Vector3d pixel2imu(Armor &armor);
         Eigen::Vector3d pixel2cam(Armor &armor);
+        Eigen::Vector3d pixel2cam(cv::Point2f pixel, float depth);
         Eigen::Vector3d pnp2imu(Eigen::Vector3d world_position);
         Eigen::Vector3d pnp2cam(Eigen::Vector3d world_position);
         // for BUFF
@@ -62,7 +62,7 @@ namespace robot_detection{
         Eigen::Vector3d pixel2imu(cv::Point2f *p, int type);
         Eigen::Vector3d imu2buff(Eigen::Vector3d imu_pos);
         Eigen::Vector3d buff2imu(Eigen::Vector3d buff_pos);
-        double buff_scale_ratio;
+        float buff_scale_ratio;
 
         Eigen::Vector3d getAngle(Eigen::Vector3d predicted_position, Eigen::Vector3d &world_dropPosition);
         Eigen::Vector3d airResistanceSolve(Eigen::Vector3d Pos, double &pitch);//consider gravity asn air resistance

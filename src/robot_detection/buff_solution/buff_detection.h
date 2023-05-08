@@ -60,8 +60,8 @@ namespace robot_detection
     class BuffDetector
     {
     public:
-
         int error_cnt = 0;
+        bool is_need_to_save = false;
 
         BuffDetector();
         void reset();
@@ -81,13 +81,16 @@ namespace robot_detection
 
         bool isClockwise;       // true表示顺时针，false表示逆时针
         int rotate_direction;   // -1表示顺时针，1表示逆时针     ------------!!!!!!---attention---!!!!!!------------
-        double current_angle;
+        double now_angle;
         double delta_angle;
         double delta_time;
+        double shoot_delay;
         double rotate_speed;
         double const_rotate_speed;  // 60°/s
 
-        Eigen::Vector3d bullet_position;
+        Eigen::Vector3d shoot_position;     // 预测出我要打的位置 in buff coordinate
+        Eigen::Vector3d bullet_position;    // 抬枪补偿的瞄点，用于计算pitch和yaw
+        double aim_angle;
 
         AngleSolve AS;
         Eigen::Vector3d initial_yaw;
@@ -140,15 +143,16 @@ namespace robot_detection
         bool calculateScaleRatio();
         bool isSwitchBuff();
         double last_angle;
-        Eigen::Vector3d last_vector;
+        // Eigen::Vector3d last_vector;
         chrono_time last_time;
         bool isFirstCalculate;
+        int direction_count;
         bool calculateRotateDirectionAndSpeed(chrono_time now_time);
-        bool calculateShootPosition();
+        bool calculateShootPositionAndAngle();
 
         // buff feature
         // speed = a * sin(w * t) + b
-        std::vector<double> speed_vector;
+        std::vector<double> speed_vector;       // TODO: need to clear
         double a;
         double w;
         double b;

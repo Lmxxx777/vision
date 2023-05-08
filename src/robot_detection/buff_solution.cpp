@@ -150,6 +150,16 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
 
     // show image
     cv::imshow("show_src",buff_detection.show_src);
+
+    // 每次debug只能开一个错误计数(error_cnt)
+    if(buff_detection.is_need_to_save)
+    {
+        buff_detection.error_cnt++;
+        std::string path = "/home/lmx2/error_pic2/" + std::to_string(buff_detection.error_cnt) + ".jpg";
+        cv::imwrite(path,buff_detection.show_src);
+        buff_detection.is_need_to_save = false; // 用完要回归false
+    }
+
     cv::waitKey(1);
 }
 

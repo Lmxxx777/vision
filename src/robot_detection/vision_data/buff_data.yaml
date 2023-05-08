@@ -4,6 +4,8 @@
 binary_threshold: 80
 buff_color: RED
 
+shoot_delay: 0.1
+
 # R  20
 fit_circle_counts: 20
 r_actual_distance: 7

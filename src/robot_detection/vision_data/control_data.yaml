@@ -2,16 +2,25 @@
 ---
 big_w: 0.230
 big_h: 0.057
+
 small_w: 0.135
 small_h: 0.057
+
 buff_r_w: 0.0730
 buff_r_h: 0.0730
+
 buff_in_w: 0.36426
 buff_in_h: 0.043
+
 buff_out_w: 0.337836
 buff_out_h: 0.047
+
 buff_radius: 0.700
+
 buff_convex: 0.146
+
+buff_scale_ratio: 1.1
+
 
 self_type: sentry
 
