@@ -728,8 +728,59 @@ namespace robot_detection {
 
     }
 
+    Eigen::Vector3d ArmorTracker::outpostPredict()
+    {    
+        if (frame_cnt < frame_num)
+        {
+            if (last_yaw != 0)
+            {
+                if (AS.ab_yaw > last_yaw)
+                {
+                    clockwise_cnt++;
+                }
+                else if (AS.ab_yaw < last_yaw)
+                {
+                    anticlockwise_cnt++;
+                }
+            }
+            last_yaw = AS.ab_yaw;
+            frame_cnt++;
+            return enemy_armor.world_position;
+        }
+        else
+        {
+            if (anticlockwise_cnt > clockwise_cnt)
+            {
+                direction = 1;
+            }
+            else if (anticlockwise_cnt < clockwise_cnt)
+            {
+                direction = -1;
+            }
+
+            // direction = -1 顺时针 = 1 逆时针
+            outpost_time = AS.getFlyTime(enemy_armor.world_position) + SHOOT_DELAY;
+            double beta = direction * outpost_velocity * outpost_time;
+            Eigen::Vector3d theta = {0, 0, beta};
+        
+            center[0] = enemy_armor.world_position[0] - direction * outpost_radius * sin(beta/2);
+            center[1] = enemy_armor.world_position[1] + outpost_radius * cos(beta/2);
+            center[2] = enemy_armor.world_position[2];
+
+            cv::Point2f outpost_center_point = AS.imu2pixel(center);
+            circle(_src, outpost_center_point, 4, cv::Scalar(0, 255, 0), -1); // 画点，其实就是实心圆
+
+            Eigen::Vector3d original_vector = enemy_armor.world_position - center;
+            Eigen::Vector3d target_vector, target_point;
+            target_vector = AS.eulerAnglesToRotationMatrix(theta) * original_vector;
+            target_point = target_vector + center;
+
+            return target_point;
+        }
+    }
+
     // 返回false保持现状，返回true开始控制    ddt --- chrono
-    bool ArmorTracker::locateEnemy(const cv::Mat src, std::vector<Armor> armors, const chrono_time time)
+    bool ArmorTracker::locateEnemy(const cv::Mat src, std::vector<Armor> armors, const chrono_time time, int mode)
     {
         src.copyTo(_src);
         // for infantry
@@ -803,20 +854,42 @@ namespace robot_detection {
             //     pitch = round(pitch * 100)/100;
             // }
 
-            
-            Eigen::Vector3d rpy = AS.getAngle(enemy_armor.world_position,bullet_point);
-            roll  = rpy[0];
-            pitch = rpy[1];
-            yaw   = rpy[2];
-            pitch = round(pitch * 100)/100;
 
-            // pitch = 0;
-
-            if (pitch > 15)
+            //------------------------------前哨站-----------------------------------
+            if (mode == 0x11 || mode == 0x12)
             {
-                reset();
-                return false;
+                if (mode == 0x12)
+                {
+                    outpost_velocity = 0.2;
+                }
+                else
+                {
+                    outpost_velocity = 0.4;
+                }
+                Eigen::Vector3d target_point = outpostPredict();
+                Eigen::Vector3d rpy = AS.getAngle(target_point,bullet_point);
+
+                cv::Point2f outpost_point = AS.imu2pixel(target_point);
+                circle(_src, outpost_point, 4, cv::Scalar(0, 255, 0), -1); // 画点，其实就是实心圆
             }
+            //----------------------------------------------------------------------
+            else
+            {                
+                Eigen::Vector3d rpy = AS.getAngle(enemy_armor.world_position,bullet_point);
+                roll  = rpy[0];
+                pitch = rpy[1];
+                yaw   = rpy[2];
+                pitch = round(pitch * 100)/100;
+
+                // pitch = 0;
+
+                // if (pitch > 15)
+                // {
+                //     reset();
+                //     return false;
+                // }
+                }
+            
 
             return true;
         }

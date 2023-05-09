@@ -349,13 +349,13 @@ namespace robot_detection{
                     {-buff_out_w / 2 , -buff_out_h , 0.},
                     { buff_out_w / 2 , -buff_out_h , 0.},
                     { buff_in_w / 2 ,  buff_in_h , 0.},
-                    // {0 , buff_radius, -buff_convex},
+                    // {0 , buff_radius, -buff_convex},     // bug
                     {-buff_in_w / 2 ,  buff_in_h , 0.},
             };
             pu.push_back(p[0]);
             pu.push_back(p[1]);
             pu.push_back(p[2]);
-            // pu.push_back(p[3]);
+            // pu.push_back(p[3]);      // bug 
             pu.push_back(p[4]);
         }
         else if(type == BUFF_YES)

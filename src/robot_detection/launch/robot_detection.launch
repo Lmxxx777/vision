@@ -1,6 +1,6 @@
 <launch>
   
-  <!-- <node 
+  <node 
     name="mv_camera_pub" 
     pkg="mv_camera" 
     type="mv_camera" 
@@ -15,7 +15,7 @@
     type="simple_robot" 
     respawn="true"
     > 
-  </node> -->
+  </node>
 
   <node 
     name="mv_camera_sub" 

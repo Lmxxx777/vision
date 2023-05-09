@@ -110,7 +110,7 @@ namespace robot_detection
         if(!isInitYaw)
         {
             isInitYaw = initYaw();
-            // std::cout<<"already isInitYaw!!! -----  "<< initial_yaw[2]<<std::endl;
+            std::cout<<"already isInitYaw!!! -----  "<< initial_yaw[2]/CV_PI*180<<std::endl;
             return false;
         }
 
@@ -124,44 +124,23 @@ namespace robot_detection
 
         if(!isFindR)
         {
-            if(!findRcenter())
-            {
-                return false;
-            }
-            if(!fitCircle()) 
-            {
-                return false;
-            }
+            if(!findRcenter()) { return false; }
+            if(!fitCircle()) { return false; }
         }
         else
         {
             // 用之前清空
             components_rrt.clear();
-            if(!refindRcenter())
-            {
-                return false;
-            }
-            if(!findComponents())
-            {
-                return false;
-            }
+            if(!refindRcenter()) { return false; }
+            if(!findComponents()) { return false; }
             // 用之前清空
             buff_no.in_rrt = cv::RotatedRect();
             buff_no.out_rrt = cv::RotatedRect();
-            if(!matchComponents())
-            {
-                return false;
-            }
+            if(!matchComponents()) { return false; }
             calculateBuffPosition();
             // calculateScaleRatio();
-            // if(!calculateRotateDirectionAndSpeed(now_time))
-            // {
-            //     return false;
-            // }
-            if(!calculateShootPositionAndAngle())
-            {
-                return false;
-            }
+            if(!calculateRotateDirectionAndSpeed(now_time)) { return false; }
+            if(!calculateShootPositionAndAngle()) { return false; }
         }
         return true;
     }
@@ -192,9 +171,10 @@ namespace robot_detection
         cv::putText(show_src,"y : "+std::to_string(AS.imu2pixel(buff_no.imu_position).y),cv::Point2f(0,390),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
         cv::putText(show_src,"angle : "+std::to_string(now_angle),cv::Point2f(0,450),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-        cv::putText(show_src,"delta_angle : "+std::to_string(delta_angle),cv::Point2f(0,480),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-        cv::putText(show_src,"delta_time : "+std::to_string(delta_time),cv::Point2f(0,510),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-        cv::putText(show_src,"rotate_speed : "+std::to_string(rotate_speed),cv::Point2f(0,540),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        cv::putText(show_src,"aim_angle : "+std::to_string(aim_angle),cv::Point2f(0,480),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        cv::putText(show_src,"delta_angle : "+std::to_string(delta_angle),cv::Point2f(0,510),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        cv::putText(show_src,"delta_time : "+std::to_string(delta_time),cv::Point2f(0,540),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        cv::putText(show_src,"rotate_speed : "+std::to_string(rotate_speed),cv::Point2f(0,570),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
 
         cv::putText(show_src,"R position",cv::Point2f(0,1024 - 150),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
         cv::putText(show_src,"s : "+std::to_string(r_center.buff_position.norm())+"m",cv::Point2f(0,1024 - 120),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
@@ -220,9 +200,21 @@ namespace robot_detection
         cv::putText(show_src,"y : "+std::to_string(shoot_position[1]),cv::Point2f(900,1024 - 60),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
         cv::putText(show_src,"z : "+std::to_string(shoot_position[2]),cv::Point2f(900,1024 - 30),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(255,255,0),1,3);
 
+        if(rotate_direction == -1)
+        {
+            cv::putText(show_src,"rotate_direction:CW",cv::Point2f(0,600),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3); 
+        }
+        else if(rotate_direction == 1)
+        {
+            cv::putText(show_src,"rotate_direction:ACW",cv::Point2f(0,600),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        }
+        else if(rotate_direction == 0)
+        {
+            cv::putText(show_src,"rotate_direction:STOP",cv::Point2f(0,600),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
+        }
         // shoot point in image
         cv::Point2f shoot_pixel = AS.imu2pixel(AS.buff2imu(shoot_position));
-        cv::circle(show_src,shoot_pixel,50,cv::Scalar(50,100,255),-1);
+        cv::circle(show_src,shoot_pixel,5,cv::Scalar(50,100,255),-1);
         // bullet point in image
         cv::Point2f bullet_pixel = AS.imu2pixel(bullet_position);
         cv::circle(show_src,bullet_pixel,5,cv::Scalar(150,100,255),-1);
@@ -236,7 +228,8 @@ namespace robot_detection
 #ifdef ROSBAG_DEBUG
         initial_yaw[2] = 49.2 * CV_PI / 180.0;
 #else
-        initial_yaw[2] = -147.356 * CV_PI / 180.0;
+        // initial_yaw[2] = -147.356 * CV_PI / 180.0;      // small_stay.bag
+        initial_yaw[2] = 171.6 * CV_PI / 180.0;
 #endif
         AS.RotationMatrix_imu2buff = AS.eulerAnglesToRotationMatrix(initial_yaw);
         return true;
@@ -598,6 +591,7 @@ namespace robot_detection
         }
         else
         {
+            std::cout<<"center R is not in image!!!!"<<std::endl;
             return false;
         }
 
@@ -792,7 +786,9 @@ namespace robot_detection
 
                     buff_no.pixel_position = (components_rrt[j].center + components_rrt[i].center) / 2;
 
-                    // cv::circle(show_src,buff_no.pixel_position,5,cv::Scalar(0,255,0),-1);
+                    // draw buff circle
+                    double r_r = POINT_DIST(r_center.pixel_position,buff_no.pixel_position);
+                    cv::circle(show_src,r_center.pixel_position,r_r,cv::Scalar(0,255,0),1,8);
                     
                     // double angle_offset = fabs(atan2(components_rrt[j].center.y - r_center.pixel_position.y, components_rrt[j].center.x - r_center.pixel_position.x)/CV_PI*180.0 - atan2(components_rrt[i].center.y - r_center.pixel_position.y, components_rrt[i].center.x - r_center.pixel_position.x)/CV_PI*180.0); 
                     // std::cout<<"data:  "<<angle_offset<<"   "<<in_one_line<<std::endl;
@@ -1071,7 +1067,7 @@ namespace robot_detection
             // last_vector = buff_no.buff_position - r_center.buff_position;
             last_time = std::chrono::high_resolution_clock::now();
             last_angle = now_angle;
-
+            std::cout<<"isFirstCalculate = true !!!"<<std::endl;
             isFirstCalculate = true;
             return false;
         }
@@ -1088,42 +1084,52 @@ namespace robot_detection
             // delta_angle
             // 上面的弃用，采用图像坐标系计算角度
             delta_angle = now_angle - last_angle;
-            if(delta_angle > 36)
+            // delta_time
+            delta_time = seconds_duration(now_time - last_time).count();
+
+            // now & last switch
+            // last_vector = now_vector;
+            last_time = now_time;
+            last_angle = now_angle;
+            if(fabs(delta_angle) > 36)
             {
                 // 这属于是切换符叶了
-                std::cout<<"switch buff !!!"<<std::endl;
+                std::cout<<"switch buff !!! ---- "<<now_angle<<" - "<<last_angle<<" = "<<delta_angle<< std::endl;
                 return false;
             }
             
-            if(delta_angle > 0)
+            if(rotate_direction == 0)
             {
-                direction_count++;
-            }
-            else
-            {
-                direction_count--;
-            }
+                if(delta_angle > 0)
+                {
+                    direction_count++;
+                }
+                else
+                {
+                    direction_count--;
+                }
 
-            if(direction_count > 10)
-            {
-                isClockwise = true;
-                direction_count = 0;
-            }
-            else if(direction_count < -10)
-            {
-                isClockwise = false;
-                direction_count = 0;
-            }
-            else
-            {
-                return false;
+                if(direction_count > 10)
+                {
+                    isClockwise = false;
+                    direction_count = 0;
+                }
+                else if(direction_count < -10)
+                {
+                    isClockwise = true;
+                    direction_count = 0;
+                }
+                else
+                {
+                    return false;
+                }
             }
             // calculate rotate direction
             // isClockwise = last_vector[0]*now_vector[2]-last_vector[2]*now_vector[0] > 0 ? false : true;
             rotate_direction = isClockwise ? -1 : 1;
+            // std::cout<<"rotate_direction:  "<<rotate_direction<<std::endl;
+            
 
-            // delta_time
-            delta_time = seconds_duration(now_time - last_time).count();
 
             // calculate rotate speed
             rotate_speed = fabs((delta_angle * CV_PI / 180) / delta_time);
@@ -1134,9 +1140,6 @@ namespace robot_detection
                 rotate_speed = 2.09;
             speed_vector.emplace_back(rotate_speed);
 
-            // last_vector = now_vector;
-            last_time = now_time;
-            last_angle = now_angle;
 
             if(!isBegin)
             {
@@ -1148,16 +1151,6 @@ namespace robot_detection
             // std::cout<<"delta_angle  : "<<delta_angle<<std::endl;
             // std::cout<<"delta_time   : "<<delta_time<<std::endl;
             // std::cout<<"rotate_speed : "<<rotate_speed<<std::endl;
-
-
-            if(isClockwise)
-            {
-                // cv::putText(show_src,"CW",cv::Point2f(0,210),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3); 
-            }
-            else
-            {
-                // cv::putText(show_src,"C-CW",cv::Point2f(0,210),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 0),1,3);
-            }
             return true;
         }
     }
@@ -1208,12 +1201,10 @@ namespace robot_detection
         if(buff_type == CONST_SPEED)
         {
             // calculate time
-            double delta_t = AS.getFlyTime(buff_no.imu_position) + shoot_delay; 
-            double delta_angle = delta_t * const_rotate_speed;
+            delta_time = buff_no.imu_position.norm()/28 + shoot_delay; 
+            // double delta_t = AS.getFlyTime(buff_no.imu_position) + shoot_delay; 
+            delta_angle = delta_time * const_rotate_speed;
             aim_angle = now_angle + rotate_direction * delta_angle;
-            
-
-            // bullet_position = 
         }
         else if(buff_type == VARIABLE_SPEED)
         {
@@ -1221,13 +1212,13 @@ namespace robot_detection
         }
         aim_angle = maintainAngleLegal(aim_angle);
 
-        shoot_position[0] = buff_no.buff_position[0] + cos(aim_angle) * AS.buff_radius;
-        shoot_position[1] = buff_no.buff_position[1];
-        shoot_position[2] = buff_no.buff_position[2] + sin(aim_angle) * AS.buff_radius;
-
+        // shoot_position[0] = 0 + cos(aim_angle * CV_PI / 180) * AS.buff_radius;
+        shoot_position[0] = r_center.buff_position[0] + cos(aim_angle * CV_PI / 180) * AS.buff_radius;
+        shoot_position[1] = r_center.buff_position[1];
+        shoot_position[2] = r_center.buff_position[2] + sin(aim_angle * CV_PI / 180) * AS.buff_radius;
+        // shoot_position = AS.buff2imu(shoot_position);
+        // control_angle = AS.getAngle(AS.buff2imu(shoot_position),bullet_position);
         control_angle = AS.getAngle(AS.buff2imu(shoot_position),bullet_position);
-
-        // control_angle = AS.getAngle(buff_no.imu_position,bullet_position);
         return true;
     }   
 }

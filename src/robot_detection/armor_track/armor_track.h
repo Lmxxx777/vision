@@ -56,10 +56,9 @@ namespace robot_detection {
         void reset();
         // void show();
         bool initial(std::vector<Armor> find_armors);
-        bool switchEnemy(std::vector<Armor> find_armors);
         bool selectEnemy(std::vector<Armor> find_armors, double dt);
         bool estimateEnemy(double dt);
-        bool locateEnemy(const cv::Mat src, std::vector<Armor> armors, const chrono_time time);
+        bool locateEnemy(const cv::Mat src, std::vector<Armor> armors, const chrono_time time, int mode);
 
         void update_jump_trackers(Armor new_armor);
         void reset_kf(Armor new_armor);
@@ -138,6 +137,24 @@ namespace robot_detection {
         Armor temp[5];
         double delta_distance;
         double hero_distance;
+        bool switchEnemy(std::vector<Armor> find_armors);
     //----------------------------------------------------------
+    //---------------------outpostPredict---------------------------
+        int frame_cnt = 0;
+        int frame_num = 51;
+        int anticlockwise_cnt = 0;
+        int clockwise_cnt = 0;
+        double last_yaw = 0;
+        int direction = 0;
+        Eigen::Vector3d center;
+        double outpost_radius = 0.2765;
+        Eigen::Vector3d theta;//圆心角(弧度)
+        double outpost_velocity = 0.4;
+        double outpost_time;
+        int next_judge_num;
+        int next_judge_cnt = 0;
+        Eigen::Vector3d outpostPredict();
+    //-----------------------------------------------------
+
     };
 }

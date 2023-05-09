@@ -86,17 +86,18 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     float bullet_speed = vision_data.shoot_spd;
     int mode = vision_data.shoot_sta;
 
-    // bullet_speed = 28;
+    if(bullet_speed<5)
+    bullet_speed = 28;
 
 
     // TODO: enemy color set 1-RED 2-BLUE
     // enemy_color = 7; 
     int color;
-    if(enemy_color == 7)
+    if(enemy_color == 107)
     {
         color = robot_detection::BLUE;
     }
-    else if(enemy_color == 107)
+    else if(enemy_color == 7)
     {
         color = robot_detection::RED;
     }

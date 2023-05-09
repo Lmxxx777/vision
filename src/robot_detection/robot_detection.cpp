@@ -235,7 +235,7 @@ void callback(const sensor_msgs::ImageConstPtr & src_msg, const robot_msgs::visi
     // }
     // std::cout<<std::endl;
 
-    track_bool= Track.locateEnemy(src,Targets,now_time);
+    track_bool= Track.locateEnemy(src,Targets,now_time,mode);
 
     if(track_bool)
     {
